@@ -15,7 +15,7 @@ app.use(express.json());
 
 
 // Use user routes
-app.use('/api/user', userRoutes);
+app.use('/api', userRoutes);
 
 
 app.listen(port, () => {
