@@ -4,6 +4,7 @@ const db = require("./config/db.js")
 const jwt = require("jsonwebtoken")
 const cors = require("cors")
 const userRoutes = require("./routes/userRoutes.js")
+const authRoutes = require("./routes/authRoutes.js")
 
 // express app creation
 const app = express();
@@ -15,6 +16,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 app.use("/api/users", userRoutes);
+app.use('/api/auth',authRoutes)
 
 
 // Set up server to listen on port
