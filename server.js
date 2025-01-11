@@ -1,9 +1,6 @@
 const express = require("express");
 const bodyParser = require('body-parser');
-const db = require("./config/db.js")
-const jwt = require("jsonwebtoken")
 const cors = require("cors")
-const userRoutes = require("./routes/userRoutes.js")
 const authRoutes = require("./routes/authRoutes.js")
 
 // express app creation
@@ -15,7 +12,6 @@ app.use(cors());
 // Middleware Json
 app.use(bodyParser.json());
 
-app.use("/api/users", userRoutes);
 app.use('/api/auth',authRoutes)
 
 
