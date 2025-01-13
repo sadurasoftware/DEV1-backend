@@ -34,14 +34,36 @@ const login = async (req, res) => {
     // Generate JWT token 
     const token=generateToken({ email });
 
+    db.query('UPDATE users SET token = ? WHERE email = ?', [token, email], (err, result) => {
+      if (err) {
+        console.error('Error saving token:', err);
+        return res.status(500).json({ message: 'Error saving token' });
+      }
+    });
+
     // Respond with success and the JWT token
     res.status(200).json({
-      message: 'User logged in successfully',
       token, 
-      user,
+      username: user.username,
     });
   });
 
 };
 
-  module.exports = { login };
+const logout = async(req,res)=>{
+  const { token, username } = req.body;
+  console.log(req.body);
+
+  db.query('DELETE token from users Where username = ? ', [username], (err, result) => {
+    if (err) {
+      console.error('Logout error:', err);
+      return res.status(500).json({ message: 'Error in logout' });
+    }
+  });
+  res.status(200).json({
+    message:"User Loggedout"
+  });
+
+}
+
+  module.exports = { login, logout };
