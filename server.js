@@ -4,7 +4,6 @@ const bodyParser = require('body-parser');
 const userRoutes = require('./routes/userRoutes');
 const authRoutes = require("./routes/authRoutes.js")
 
-
 // Create Express app
 const app = express();
 
