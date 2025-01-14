@@ -2,15 +2,17 @@ const db = require('../config/db');
 const bcrypt = require('bcryptjs');
 
 const registerUser = async (req, res) => {
-    const { username, email, password, terms } = req.body;
+    const { username, email, password, terms, theme } = req.body;
     console.log(req.body);
 
     console.log('Username:', username);
     console.log('Email:', email);
     console.log('Password:', password);
     console.log('terms:', terms);
+    console.log('Theme:', theme);
 
-    if (!username || !email || !password || terms === undefined) {
+    const userTheme = theme || 'light';
+    if (!username || !email || !password || terms  === undefined) {
       return res.status(400).send('Please fill all the fields.');
     }
 
@@ -35,8 +37,8 @@ const registerUser = async (req, res) => {
             }
 
             // Insert the new user into the database
-            const insertUserQuery = 'INSERT INTO users (username, email, password, terms) VALUES (?,?,?,?)';
-            db.query(insertUserQuery, [username, email, hashedPassword, terms], (err) => {
+            const insertUserQuery = 'INSERT INTO users (username, email, password, terms, theme ) VALUES (?,?,?,?,?)';
+            db.query(insertUserQuery, [username, email, hashedPassword, terms, userTheme], (err) => {
                 if (err) {
                     console.error('Error inserting user into database:', err);
                     return res.status(500).send('Internal server error');
