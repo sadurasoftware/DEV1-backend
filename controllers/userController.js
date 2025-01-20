@@ -1,15 +1,9 @@
-const db = require('../config/db');
+const User = require('../models/registerUser');
 const bcrypt = require('bcryptjs');
+
 
 const registerUser = async (req, res) => {
     const { username, email, password, terms, theme } = req.body;
-    console.log(req.body);
-
-    console.log('Username:', username);
-    console.log('Email:', email);
-    console.log('Password:', password);
-    console.log('terms:', terms);
-    console.log('Theme:', theme);
 
     const userTheme = theme || 'light';
     if (!username || !email || !password || terms  === undefined) {
@@ -25,32 +19,26 @@ const registerUser = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // Check if the user already exists
-        const insertUserQuery = 'SELECT * FROM users WHERE email = ?';
-        db.query(insertUserQuery, [email], (err, result) => {
-            if (err) {
-                console.error('Error querying database:', err);
-                return res.status(500).send('Internal server error');
-            }
-
-            if (result.length > 0) {
+        const existingUser = await User.findOne({
+            where: {email:email},
+        });
+        
+            if (existingUser) {
                 return res.status(400).send('User already exists.');
             }
 
-            // Insert the new user into the database
-            const insertUserQuery = 'INSERT INTO users (username, email, password, terms, theme ) VALUES (?,?,?,?,?)';
-            db.query(insertUserQuery, [username, email, hashedPassword, terms, userTheme], (err) => {
-                if (err) {
-                    console.error('Error inserting user into database:', err);
-                    return res.status(500).send('Internal server error');
-                }
-
-                res.status(200).send('User registered successfully');
+            // Insert the new user in database
+            const newUser = await User.create({
+                username, email, password:hashedPassword, terms, theme:userTheme
             });
-        });
-    } catch (error) {
-        console.error('Error hashing password:', error);
-        return res.status(500).send('Error hashing the password');
-    }
+
+            res.status(200).send('User registered successfully.');
+        }
+        catch(error){
+            console.error('Error inserting user into database:', error);
+            return res.status(500).send('Internal server error');
+        }               
+               
 };
 
 module.exports = { registerUser };

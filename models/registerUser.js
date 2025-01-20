@@ -24,17 +24,13 @@ const User = sequelize.define('User', {
         type: DataTypes.BOOLEAN,
         allowNull: false,
     },
-    // theme: {
-    //     type: DataTypes.STRING,
-    //     defaultValue: 'light'
-    // },
+    theme: {
+        type: DataTypes.STRING,
+        defaultValue: 'light'
+    },
 },
 {
     timestamps: false,
-
-
 })
-
-
 
 module.exports = User;
