@@ -1,69 +1,66 @@
-const db = require("../config/db")
-const {generateToken} = require("../utils/jwt");
-const { verifyPassword } = require("../utils/hash")
+const { generateToken } = require('../utils/jwt');
+const { verifyPassword } = require('../utils/hash');
+const User = require('../models/registerUser'); 
 
 const login = async (req, res) => {
-    const { email, password } = req.body;
 
-    // Validate inputs
+  const { email, password } = req.body;
   if (!email || !password) {
-    return res.status(400).json({ message: 'Please provide username and password.' });
+    return res.status(400).json({ message: 'Please provide email and password.' });
   }
 
-  // Check if the user exists
-  db.query('SELECT * FROM users WHERE email = ?', [email], async (err, results) => {
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ message: 'Database error' });
-    }
+  try {
+    const user = await User.findOne({ where: { email } });
 
-    // If user doesn't exist, return an error
-    if (results.length === 0) {
+    if (!user) {
       return res.status(400).json({ message: 'User not found.' });
     }
 
-    const user = results[0];
-
-    // Compare the provided password with the stored hashed password
     const passwordMatch = await verifyPassword(password, user.password);
-
     if (!passwordMatch) {
       return res.status(400).json({ message: 'Password is incorrect.' });
     }
 
-    // Generate JWT token 
-    const token=generateToken({ email });
-
-    db.query('UPDATE users SET token = ? WHERE email = ?', [token, email], (err, result) => {
-      if (err) {
-        console.error('Error saving token:', err);
-        return res.status(500).json({ message: 'Error saving token' });
-      }
+    const token = generateToken({ email });
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: false, 
     });
 
-    // Respond with success and the JWT token
     res.status(200).json({
-      token, 
+      token,
       username: user.username,
     });
-  });
-
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
 };
 
-const logout = async(req,res)=>{
-  const { token, username } = req.body;
-  console.log(req.body);
+// logout
+const logout = async (req, res) => {
+  try {
+    
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production'
+    });
 
-  db.query('DELETE token from users Where username = ? ', [username], (err, result) => {
-    if (err) {
-      console.error('Logout error:', err);
-      return res.status(500).json({ message: 'Error in logout' });
-    }
-  });
-  res.status(200).json({
-    message:"User Loggedout"
-  });
+    // const token = req.cookies.token;
+    // if (token) {
+    //   const user = await User.findOne({ where: { token } });
 
-}
+    //   if (user) {
+    //     user.token = null;
+    //     await user.save();
+    //   }
+    // }
 
-  module.exports = { login, logout };
+    res.status(200).json({ message: 'Logout successful' });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports = { login, logout };
