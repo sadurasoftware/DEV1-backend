@@ -1,66 +1,225 @@
-const { generateToken } = require('../utils/jwt');
-const { verifyPassword } = require('../utils/hash');
-const User = require('../models/registerUser'); 
+const { User } = require('../models');
+const { validationResult } = require('express-validator');
+const bcryptHelper = require('../utils/bcryptHelper');
+const jwtHelper = require('../utils/jwtHelper');
+const logger = require('../config/logger');
+const emailHelper = require('../utils/emailHelper');
+const jwt = require('jsonwebtoken');
+const dotenv = require('dotenv');
 
-const login = async (req, res) => {
+dotenv.config();
+const handleError = (res, error, message) => {
+  logger.error(`${message}: ${error.message}`);
+  return res.status(500).json({ message: 'Server error', error });
+};
 
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ message: 'Please provide email and password.' });
+const register = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    logger.warn('Validation failed during registration');
+    return res.status(400).json({ errors: errors.array() });
   }
 
   try {
+    const { username, email, password } = req.body;
+    logger.info(`Registering user: ${email}`);
+    const existingUser = await User.findOne({ where: { email } });
+
+    if (existingUser) {
+      logger.warn(`Registration failed. User already exists: ${email}`);
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    const hashedPassword = await bcryptHelper.hashPassword(password);
+    const newUser = await User.create({
+      username,
+      email,
+      password: hashedPassword,
+      isVerified: false,
+    });
+
+    const tokenPayload = { id: newUser.id, email: newUser.email, username: newUser.username };
+    const token = jwtHelper.generateToken(tokenPayload, process.env.JWT_SECRET, '1h');
+    const verificationUrl = `${process.env.VERIFICATION_URL}${token}`;
+
+    await emailHelper.verificationEmail(email, verificationUrl, username);
+    logger.info(`User registered successfully: ${email}`);
+    return res.status(201).json({
+      message: 'User created successfully. Please verify your email.',
+      user: { id: newUser.id, username: newUser.username, email: newUser.email, token },
+    });
+  } catch (error) {
+    return handleError(res, error, 'Registration error');
+  }
+};
+
+const resendVerificationEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+    logger.info(`Resending verification email to: ${email}`);
     const user = await User.findOne({ where: { email } });
 
     if (!user) {
-      return res.status(400).json({ message: 'User not found.' });
+      logger.warn(`Resend verification email failed. User not found: ${email}`);
+      return res.status(404).json({ error: 'User not found' });
     }
 
-    const passwordMatch = await verifyPassword(password, user.password);
-    if (!passwordMatch) {
-      return res.status(400).json({ message: 'Password is incorrect.' });
+    if (user.isVerified) {
+      logger.info(`User already verified: ${email}`);
+      return res.status(400).json({ error: 'User is already verified' });
     }
 
-    const token = generateToken({ email });
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: false, 
-    });
+    const token = jwtHelper.generateToken({ email }, process.env.JWT_SECRET, '1h');
+    const verificationUrl = `${process.env.VERIFICATION_URL}${token}`;
 
-    res.status(200).json({
-      token,
-      username: user.username,
-    });
+    await emailHelper.verificationEmail(email, verificationUrl, user.username);
+    logger.info(`Verification email resent successfully: ${email}`);
+    return res.status(200).json({ message: 'Verification email sent successfully' });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ message: 'Server error' });
+    return handleError(res, error, 'Resend verification email error');
   }
 };
 
-// logout
+const login = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    logger.warn('Validation failed during login');
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  try {
+    const { email, password } = req.body;
+    logger.info(`User login attempt: ${email}`);
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      logger.warn(`Login failed. User not found: ${email}`);
+      return res.status(404).json({ message: 'User not found' });
+    }
+    if (!user.isVerified) {
+      logger.warn(`Login failed. Email not verified: ${email}`);
+      return res.status(403).json({ message: 'Email not verified. Please verify your email.' });
+    }
+
+    const isPasswordValid = await bcryptHelper.comparePassword(password, user.password);
+    if (!isPasswordValid) {
+      logger.warn(`Login failed. Invalid credentials: ${email}`);
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    const tokenPayload = { id: user.id, email: user.email };
+    const token = jwtHelper.generateToken(tokenPayload, process.env.JWT_SECRET, '1h');
+
+    logger.info(`User logged in successfully: ${email}`);
+    return res.status(200).json({ token, user });
+  } catch (error) {
+    return handleError(res, error, 'Login error');
+  }
+};
+
+const verifyEmail = async (req, res) => {
+  const { token } = req.body;
+
+  if (!token) {
+    logger.warn('Verification failed. Missing token');
+    return res.status(400).json({ error: 'Token is missing' });
+  }
+
+  try {
+    const { email } = jwt.verify(token, process.env.JWT_SECRET);
+    logger.info(`Verifying email for: ${email}`);
+    const user = await User.findOne({ where: { email } });
+
+    if (!user) {
+      logger.warn(`Verification failed. User not found: ${email}`);
+      return res.status(400).json({ error: 'Invalid token or user not found' });
+    }
+
+    if (user.isVerified) {
+      logger.info(`Email already verified: ${email}`);
+      return res.status(400).json({ error: 'User is already verified' });
+    }
+
+    user.isVerified = true;
+    await user.save();
+    logger.info(`Email verified successfully: ${email}`);
+    return res.status(200).json({ message: 'Email successfully verified' });
+  } catch (error) {
+    return handleError(res, error, 'Verify email error');
+  }
+};
+
+const forgetPassword = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    logger.warn('Forget password failed. Missing email');
+    return res.status(400).json({ error: 'Email is required' });
+  }
+
+  try {
+    logger.info(`Forget password request for: ${email}`);
+    const user = await User.findOne({ where: { email } });
+
+    if (!user) {
+      logger.warn(`Forget password failed. User not found: ${email}`);
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const token = jwtHelper.generateToken({ email }, process.env.JWT_SECRET, '1h');
+    const url = `${process.env.FORGET_PASSWORD_URL}?token=${token}`;
+    await emailHelper.forgotPasswordEmail(user.email, url, user.username);
+    logger.info(`Password reset link sent successfully to: ${email}`);
+    return res.status(200).json({ message: 'Password reset link sent successfully' });
+  } catch (error) {
+    return handleError(res, error, 'Forget password error');
+  }
+};
+
+const resetPassword = async (req, res) => {
+  const { token, newPassword } = req.body;
+
+  if (!token || !newPassword) {
+    logger.warn('Reset password failed. Missing token or new password');
+    return res.status(400).json({ message: 'Token and new password are required.' });
+  }
+
+  try {
+    const { email } = jwt.verify(token, process.env.JWT_SECRET);
+    logger.info(`Resetting password for: ${email}`);
+    const user = await User.findOne({ where: { email } });
+
+    if (!user) {
+      logger.warn(`Reset password failed. User not found: ${email}`);
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    const hashedPassword = await bcryptHelper.hashPassword(newPassword);
+    user.password = hashedPassword;
+    await user.save();
+
+    logger.info(`Password reset successfully for: ${email}`);
+    return res.status(200).json({ message: 'Password reset successful.' });
+  } catch (error) {
+    return handleError(res, error, 'Reset password error');
+  }
+};
+
 const logout = async (req, res) => {
   try {
-    
-    res.clearCookie('token', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production'
-    });
-
-    // const token = req.cookies.token;
-    // if (token) {
-    //   const user = await User.findOne({ where: { token } });
-
-    //   if (user) {
-    //     user.token = null;
-    //     await user.save();
-    //   }
-    // }
-
-    res.status(200).json({ message: 'Logout successful' });
+    logger.info('User logout');
+    res.clearCookie('authToken');
+    return res.status(200).json({ message: 'Successfully logged out' });
   } catch (error) {
-    console.error('Logout error:', error);
-    res.status(500).json({ message: 'Server error' });
+    return handleError(res, error, 'Logout error');
   }
 };
 
-module.exports = { login, logout };
+module.exports = {
+  register,
+  login,
+  logout,
+  verifyEmail,
+  resendVerificationEmail,
+  forgetPassword,
+  resetPassword
+};

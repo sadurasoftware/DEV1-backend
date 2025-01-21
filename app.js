@@ -1,0 +1,43 @@
+const express = require('express');
+const dotenv = require('dotenv');
+const morgan = require('morgan');
+const cors = require('cors');
+const helmet = require('helmet');
+const { apiLimiter } = require('./middlewares/rateLimit');
+const logger = require('./config/logger');
+const { errorHandler } = require('./middlewares/errorHandler');
+
+const authRoutes = require('./routes/authRoutes');
+
+dotenv.config();
+const app = express();
+
+app.use(express.json());
+app.use(morgan('tiny'));  
+app.use(helmet());  
+app.use(cors());  
+app.use('/api/', apiLimiter);  
+
+
+app.use('/api/auth', authRoutes);
+
+
+app.get('/', (req, res) => {
+  res.send('Welcome to the Node.js Application!');
+});
+
+app.use(errorHandler);
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, async () => {
+  try {
+    const sequelize = require('./config/database');
+    await sequelize.authenticate();
+    logger.info(`Connected to the database successfully.`);
+    logger.info(`Server is running at http://localhost:${PORT}`);
+  } catch (error) {
+    logger.error('Error connecting to the database:', error.message);
+  }
+});
+
+module.exports = app;
