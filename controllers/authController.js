@@ -108,7 +108,12 @@ const login = async (req, res) => {
 
     const tokenPayload = { id: user.id, email: user.email };
     const token = jwtHelper.generateToken(tokenPayload, process.env.JWT_SECRET, '1h');
-
+    res.cookie('authToken', token, {
+      httpOnly: true,      
+      secure: true,
+      sameSite: 'Strict',  
+      maxAge: 1000 * 60 * 60, 
+    });
     logger.info(`User logged in successfully: ${email}`);
     return res.status(200).json({ token, user });
   } catch (error) {
@@ -207,12 +212,17 @@ const resetPassword = async (req, res) => {
 const logout = async (req, res) => {
   try {
     logger.info('User logout');
-    res.clearCookie('authToken');
+    res.clearCookie('authToken', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'Strict',
+    });
     return res.status(200).json({ message: 'Successfully logged out' });
   } catch (error) {
     return handleError(res, error, 'Logout error');
   }
 };
+
 
 module.exports = {
   register,
