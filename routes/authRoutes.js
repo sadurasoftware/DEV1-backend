@@ -7,7 +7,7 @@ const router = express.Router();
 
 router.post('/register',registerValidator, authController.register);
 router.post('/login',loginValidator, authController.login);
-router.get('/verify-email', authController.verifyEmail);
+router.get('/verify-email/:token', authController.verifyEmail);
 router.post('/logout',authenticateToken,authController.logout)
 router.post('/resendVerifyEmail',authController.resendVerificationEmail)
 router.post('/forget-password',forgetPasswordValidator,authController.forgetPassword)

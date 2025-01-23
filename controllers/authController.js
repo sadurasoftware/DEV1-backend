@@ -40,7 +40,8 @@ const register = async (req, res) => {
 
     const tokenPayload = { id: newUser.id, email: newUser.email, username: newUser.username };
     const token = jwtHelper.generateToken(tokenPayload, process.env.JWT_SECRET, '1h');
-    const verificationUrl = `${process.env.VERIFICATION_URL}${token}`;
+    const verificationUrl = `${process.env.VERIFICATION_URL}/verify-email/${token}`;
+
 
     await emailHelper.verificationEmail(email, verificationUrl, username);
     logger.info(`User registered successfully: ${email}`);
@@ -70,7 +71,8 @@ const resendVerificationEmail = async (req, res) => {
     }
 
     const token = jwtHelper.generateToken({ email }, process.env.JWT_SECRET, '1h');
-    const verificationUrl = `${process.env.VERIFICATION_URL}${token}`;
+    const verificationUrl = `${process.env.VERIFICATION_URL}/verify-email/${token}`;
+
 
     await emailHelper.verificationEmail(email, verificationUrl, user.username);
     logger.info(`Verification email resent successfully: ${email}`);
@@ -122,7 +124,7 @@ const login = async (req, res) => {
 };
 
 const verifyEmail = async (req, res) => {
-  const { token } = req.body;
+  const { token } = req.params;
 
   if (!token) {
     logger.warn('Verification failed. Missing token');
@@ -141,13 +143,44 @@ const verifyEmail = async (req, res) => {
 
     if (user.isVerified) {
       logger.info(`Email already verified: ${email}`);
-      return res.status(400).json({ error: 'User is already verified' });
+      return res.set("Content-Type", "text/html").send(
+        Buffer.from(
+          `<div style="text-align:center; font-family: Arial, sans-serif; padding: 20px;">
+            <div style="display: inline-block; background-color: #e6f7e6; padding: 20px; border-radius: 10px; border: 2px solid #4CAF50; text-align: center; max-width: 400px;">
+              <h2 style="color: #4CAF50; font-size: 24px; font-weight: bold;">
+                Your email is already verified.
+              </h2>
+              <div style="font-size: 40px; color: #4CAF50; margin-bottom: 20px;">&#10004;</div>
+              <a href="http://localhost:5173/login" 
+                 style="display: inline-block; background-color: #4CAF50; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold; font-size: 18px;">
+                 Login
+              </a>
+            </div>
+          </div>`
+        )
+      );
     }
+    
 
     user.isVerified = true;
     await user.save();
     logger.info(`Email verified successfully: ${email}`);
-    return res.status(200).json({ message: 'Email successfully verified' });
+    return res.set("Content-Type", "text/html").send(
+      Buffer.from(
+        `<div style="text-align:center; font-family: Arial, sans-serif; padding: 20px;">
+          <div style="display: inline-block; background-color: #e6f7e6; padding: 20px; border-radius: 10px; border: 2px solid #4CAF50; text-align: center; max-width: 400px;">
+            <h2 style="color: #4CAF50; font-size: 24px; font-weight: bold;">
+              Account Verified Successfully... You can Login now.
+            </h2>
+            <div style="font-size: 40px; color: #4CAF50; margin-bottom: 20px;">&#10004;</div>
+            <a href="http://localhost:5173/login" 
+               style="display: inline-block; background-color: #4CAF50; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold; font-size: 18px;">
+               Login
+            </a>
+          </div>
+        </div>`
+      )
+    );
   } catch (error) {
     return handleError(res, error, 'Verify email error');
   }
@@ -172,6 +205,7 @@ const forgetPassword = async (req, res) => {
 
     const token = jwtHelper.generateToken({ email }, process.env.JWT_SECRET, '1h');
     const url = `${process.env.FORGET_PASSWORD_URL}?token=${token}`;
+    console.log(url)
     await emailHelper.forgotPasswordEmail(user.email, url, user.username);
     logger.info(`Password reset link sent successfully to: ${email}`);
     return res.status(200).json({ message: 'Password reset link sent successfully' });
