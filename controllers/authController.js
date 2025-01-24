@@ -187,6 +187,7 @@ const verifyEmail = async (req, res) => {
 };
 
 const forgetPassword = async (req, res) => {
+  console.log("Forget password route hit");
   const { email } = req.body;
 
   if (!email) {
@@ -205,7 +206,7 @@ const forgetPassword = async (req, res) => {
 
     const token = jwtHelper.generateToken({ email }, process.env.JWT_SECRET, '1h');
     const url = `${process.env.FORGET_PASSWORD_URL}?token=${token}`;
-    console.log(url)
+
     await emailHelper.forgotPasswordEmail(user.email, url, user.username);
     logger.info(`Password reset link sent successfully to: ${email}`);
     return res.status(200).json({ message: 'Password reset link sent successfully' });
@@ -214,8 +215,40 @@ const forgetPassword = async (req, res) => {
   }
 };
 
+
+
+const getResetPassword = async (req, res) => {
+  const { token } = req.query; 
+  
+  if (!token) {
+    logger.warn('Reset password failed. Missing token');
+    return res.status(400).json({ message: 'Token is required to reset password.' });
+  }
+
+  try {
+    const { email } = jwt.verify(token, process.env.JWT_SECRET);
+    logger.info(`Token verified for: ${email}`);
+    
+  
+    const user = await User.findOne({ where: { email } });
+
+    if (!user) {
+      logger.warn(`Reset password failed. User not found: ${email}`);
+      return res.status(404).json({ message: 'User not found.' });
+    }
+    return res.redirect(`http://localhost:5173/reset-password?token=${token}`);
+   
+  } catch (error) {
+    logger.error('Error verifying reset password token', error);
+    return res.status(400).json({ message: 'Invalid or expired token' });
+  }
+};
+
+
+
 const resetPassword = async (req, res) => {
   const { token, newPassword } = req.body;
+  console.log(req.body);
 
   if (!token || !newPassword) {
     logger.warn('Reset password failed. Missing token or new password');
@@ -265,5 +298,6 @@ module.exports = {
   verifyEmail,
   resendVerificationEmail,
   forgetPassword,
+  getResetPassword,
   resetPassword
 };
