@@ -38,7 +38,9 @@ const forgotPasswordEmail = async(to, url, username)=>{
         <p style="font-size: 16px; color: #333; text-align: left; margin-bottom: 20px;">If not you kindly ingnore this mail</p>
 
     </div>`
+   
     })
+    console.log(url)
 }
 
 
