@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const logger = require('../config/logger');
 
 const authenticateToken = (req, res, next) => {
-  const token = req.header('Authorization')?.split(' ')[1];  
+  const token = req.body.token;
 
   if (!token) {
     logger.warn('No token provided');

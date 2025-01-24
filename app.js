@@ -34,7 +34,14 @@ app.use(
 
 app.use(morgan('tiny'));  
 app.use(helmet());  
-app.use(cors());  
+const corsOptions = {
+  origin: 'http://localhost:5173', 
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true,  // Allow cookies and authorization headers to be included
+};
+
+app.use(cors(corsOptions));
+
 app.use('/api/', apiLimiter);  
 app.use('/api/auth', authRoutes);
 
