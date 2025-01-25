@@ -3,7 +3,6 @@ const logger = require('../config/logger');
 
 const authenticateToken = (req, res, next) => {
   const token = req.body.token;
-
   if (!token) {
     logger.warn('No token provided');
     return res.status(401).json({ message: 'Access denied. No token provided.' });
@@ -13,10 +12,14 @@ const authenticateToken = (req, res, next) => {
     req.user = decoded; 
     next(); 
   } catch (error) {
-    logger.error(`Token verification failed: ${error.message}`);
-    return res.status(403).json({ message: 'Invalid or expired token.' });
+    if (error.name === 'TokenExpiredError') {
+      logger.error('Token verification failed: Token has expired');
+      return res.status(403).json({ message: 'Token has expired.' });
+    } else {
+      logger.error(`Token verification failed: ${error.message}`);
+      return res.status(403).json({ message: 'Invalid or expired token.' });
+    }
   }
 };
 
-module.exports =  authenticateToken
-
+module.exports = authenticateToken;

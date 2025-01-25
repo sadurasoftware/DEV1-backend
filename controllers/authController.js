@@ -6,8 +6,8 @@ const logger = require('../config/logger');
 const emailHelper = require('../utils/emailHelper');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
-
 dotenv.config();
+
 const handleError = (res, error, message) => {
   logger.error(`${message}: ${error.message}`);
   return res.status(500).json({ message: 'Server error', error });
@@ -19,17 +19,14 @@ const register = async (req, res) => {
     logger.warn('Validation failed during registration');
     return res.status(400).json({ errors: errors.array() });
   }
-
   try {
     const { username, email, password } = req.body;
     logger.info(`Registering user: ${email}`);
     const existingUser = await User.findOne({ where: { email } });
-
     if (existingUser) {
       logger.warn(`Registration failed. User already exists: ${email}`);
       return res.status(400).json({ message: 'User already exists' });
     }
-
     const hashedPassword = await bcryptHelper.hashPassword(password);
     const newUser = await User.create({
       username,
@@ -37,12 +34,9 @@ const register = async (req, res) => {
       password: hashedPassword,
       isVerified: false,
     });
-
     const tokenPayload = { id: newUser.id, email: newUser.email, username: newUser.username };
     const token = jwtHelper.generateToken(tokenPayload, process.env.JWT_SECRET, '1h');
     const verificationUrl = `${process.env.VERIFICATION_URL}/verify-email/${token}`;
-
-
     await emailHelper.verificationEmail(email, verificationUrl, username);
     logger.info(`User registered successfully: ${email}`);
     return res.status(201).json({
@@ -59,21 +53,16 @@ const resendVerificationEmail = async (req, res) => {
     const { email } = req.body;
     logger.info(`Resending verification email to: ${email}`);
     const user = await User.findOne({ where: { email } });
-
     if (!user) {
       logger.warn(`Resend verification email failed. User not found: ${email}`);
       return res.status(404).json({ error: 'User not found' });
     }
-
     if (user.isVerified) {
       logger.info(`User already verified: ${email}`);
       return res.status(400).json({ error: 'User is already verified' });
     }
-
     const token = jwtHelper.generateToken({ email }, process.env.JWT_SECRET, '1h');
     const verificationUrl = `${process.env.VERIFICATION_URL}/verify-email/${token}`;
-
-
     await emailHelper.verificationEmail(email, verificationUrl, user.username);
     logger.info(`Verification email resent successfully: ${email}`);
     return res.status(200).json({ message: 'Verification email sent successfully' });
@@ -88,7 +77,6 @@ const login = async (req, res) => {
     logger.warn('Validation failed during login');
     return res.status(400).json({ errors: errors.array() });
   }
-
   try {
     const { email, password } = req.body;
     logger.info(`User login attempt: ${email}`);
@@ -101,13 +89,11 @@ const login = async (req, res) => {
       logger.warn(`Login failed. Email not verified: ${email}`);
       return res.status(403).json({ message: 'Email not verified. Please verify your email.' });
     }
-
     const isPasswordValid = await bcryptHelper.comparePassword(password, user.password);
     if (!isPasswordValid) {
       logger.warn(`Login failed. Invalid credentials: ${email}`);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
-
     const tokenPayload = { id: user.id, email: user.email };
     const token = jwtHelper.generateToken(tokenPayload, process.env.JWT_SECRET, '1h');
     res.cookie('authToken', token, {
@@ -125,22 +111,18 @@ const login = async (req, res) => {
 
 const verifyEmail = async (req, res) => {
   const { token } = req.params;
-
   if (!token) {
     logger.warn('Verification failed. Missing token');
     return res.status(400).json({ error: 'Token is missing' });
   }
-
   try {
     const { email } = jwt.verify(token, process.env.JWT_SECRET);
     logger.info(`Verifying email for: ${email}`);
     const user = await User.findOne({ where: { email } });
-
     if (!user) {
       logger.warn(`Verification failed. User not found: ${email}`);
       return res.status(400).json({ error: 'Invalid token or user not found' });
     }
-
     if (user.isVerified) {
       logger.info(`Email already verified: ${email}`);
       return res.set("Content-Type", "text/html").send(
@@ -160,8 +142,6 @@ const verifyEmail = async (req, res) => {
         )
       );
     }
-    
-
     user.isVerified = true;
     await user.save();
     logger.info(`Email verified successfully: ${email}`);
@@ -189,21 +169,17 @@ const verifyEmail = async (req, res) => {
 const forgetPassword = async (req, res) => {
   console.log("Forget password route hit");
   const { email } = req.body;
-
   if (!email) {
     logger.warn('Forget password failed. Missing email');
     return res.status(400).json({ error: 'Email is required' });
   }
-
   try {
     logger.info(`Forget password request for: ${email}`);
     const user = await User.findOne({ where: { email } });
-
     if (!user) {
       logger.warn(`Forget password failed. User not found: ${email}`);
       return res.status(404).json({ error: 'User not found' });
     }
-
     const token = jwtHelper.generateToken({ email }, process.env.JWT_SECRET, '1h');
     const url = `${process.env.FORGET_PASSWORD_URL}?token=${token}`;
 
@@ -215,64 +191,76 @@ const forgetPassword = async (req, res) => {
   }
 };
 
-
-
 const getResetPassword = async (req, res) => {
   const { token } = req.query; 
-  
   if (!token) {
     logger.warn('Reset password failed. Missing token');
     return res.status(400).json({ message: 'Token is required to reset password.' });
   }
-
   try {
     const { email } = jwt.verify(token, process.env.JWT_SECRET);
     logger.info(`Token verified for: ${email}`);
-    
-  
     const user = await User.findOne({ where: { email } });
-
     if (!user) {
       logger.warn(`Reset password failed. User not found: ${email}`);
       return res.status(404).json({ message: 'User not found.' });
     }
     return res.redirect(`http://localhost:5173/reset-password?token=${token}`);
-   
   } catch (error) {
     logger.error('Error verifying reset password token', error);
     return res.status(400).json({ message: 'Invalid or expired token' });
   }
 };
 
-
-
 const resetPassword = async (req, res) => {
   const { token, newPassword } = req.body;
-  console.log(req.body);
-
   if (!token || !newPassword) {
     logger.warn('Reset password failed. Missing token or new password');
     return res.status(400).json({ message: 'Token and new password are required.' });
   }
-
   try {
     const { email } = jwt.verify(token, process.env.JWT_SECRET);
     logger.info(`Resetting password for: ${email}`);
     const user = await User.findOne({ where: { email } });
-
     if (!user) {
       logger.warn(`Reset password failed. User not found: ${email}`);
       return res.status(404).json({ message: 'User not found.' });
     }
-
     const hashedPassword = await bcryptHelper.hashPassword(newPassword);
     user.password = hashedPassword;
     await user.save();
-
     logger.info(`Password reset successfully for: ${email}`);
     return res.status(200).json({ message: 'Password reset successful.' });
   } catch (error) {
     return handleError(res, error, 'Reset password error');
+  }
+};
+const changePassword = async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+  if (!oldPassword || !newPassword) {
+    logger.warn('Change Password failed. Missing oldpassword and newPassword');
+    return res.status(400).json({ message: 'Old password and new password are required.' });
+  }
+  try {
+    const userId = req.user.id; 
+    const user = await User.findByPk(userId);
+    if (!user) {
+      logger.warn(`change password failed. User not found: ${user}`);
+      return res.status(404).json({ message: 'User not found.' });
+    }
+    const isOldPasswordValid = await bcryptHelper.comparePassword(oldPassword, user.password);
+    if (!isOldPasswordValid) {
+      logger.warn(`change password failed. Old password is incorrect: ${isOldPasswordValid}`);
+      return res.status(401).json({ message: 'Old password is incorrect.' });
+    }
+    const hashedNewPassword = await bcryptHelper.hashPassword(newPassword);
+    user.password = hashedNewPassword;
+    await user.save();
+    logger.info(`Password change successfully for: ${user}`);
+    return res.status(200).json({ message: 'Password updated successfully.' });
+  } catch (error) {
+    logger.error(`Change password error: ${error.message}`);
+    return res.status(500).json({ message: 'Server error', error });
   }
 };
 
@@ -299,5 +287,6 @@ module.exports = {
   resendVerificationEmail,
   forgetPassword,
   getResetPassword,
-  resetPassword
+  resetPassword,
+  changePassword
 };
