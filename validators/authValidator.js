@@ -1,5 +1,7 @@
-
 const { body } = require('express-validator');
+
+const passwordRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,20}$/;
+
 const registerValidator = [
   body('username')
     .notEmpty()
@@ -16,8 +18,10 @@ const registerValidator = [
   body('password')
     .notEmpty()
     .withMessage('Password is required')
-    .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters long')
+    .matches(passwordRegex)
+    .withMessage(
+      'Password should be a combination of one uppercase, one lowercase, one special character, one digit, and be between 8 and 20 characters long'
+    )
 ];
 
 const loginValidator = [
@@ -31,6 +35,7 @@ const loginValidator = [
     .notEmpty()
     .withMessage('Password is required')
 ];
+
 const forgetPasswordValidator = [
   body('email')
     .notEmpty()
@@ -49,13 +54,30 @@ const resetPasswordValidator = [
   body('newPassword')
     .notEmpty()
     .withMessage('New password is required')
-    .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters long')
+    .matches(passwordRegex)
+    .withMessage(
+      'Password should be a combination of one uppercase, one lowercase, one special character, one digit, and be between 8 and 20 characters long'
+    )
+];
+
+const changePasswordValidator = [
+  body('oldPassword')
+    .notEmpty()
+    .withMessage('Please enter your old password'),
+
+  body('newPassword')
+    .notEmpty()
+    .withMessage('Please enter a new password')
+    .matches(passwordRegex)
+    .withMessage(
+      'Password should be a combination of one uppercase, one lowercase, one special character, one digit, and be between 8 and 20 characters long'
+    )
 ];
 
 module.exports = {
   registerValidator,
   loginValidator,
   forgetPasswordValidator,
-  resetPasswordValidator
+  resetPasswordValidator,
+  changePasswordValidator
 };
