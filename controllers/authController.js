@@ -1,4 +1,5 @@
 const { User } = require('../models');
+const { Role } = require('../models');
 const { validationResult } = require('express-validator');
 const bcryptHelper = require('../utils/bcryptHelper');
 const jwtHelper = require('../utils/jwtHelper');
@@ -20,19 +21,30 @@ const register = async (req, res) => {
     return res.status(400).json({ errors: errors.array() });
   }
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password, role } = req.body;
+    console.log(req.body);
     logger.info(`Registering user: ${email}`);
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
       logger.warn(`Registration failed. User already exists: ${email}`);
       return res.status(400).json({ message: 'User already exists' });
     }
+
+    const roleData = await Role.findOne({ where: { name: role } });
+    if (!roleData) {
+      logger.warn(`Invalid role provided during registration: ${role}`);
+      return res.status(400).json({ message: 'Invalid role' });
+    }
+
+    
+
     const hashedPassword = await bcryptHelper.hashPassword(password);
     const newUser = await User.create({
       username,
       email,
       password: hashedPassword,
       isVerified: false,
+      roleName: roleData.name,
     });
     const tokenPayload = { id: newUser.id, email: newUser.email, username: newUser.username };
     const token = jwtHelper.generateToken(tokenPayload, process.env.JWT_SECRET, '1h');
@@ -89,6 +101,7 @@ const login = async (req, res) => {
       logger.warn(`Login failed. Email not verified: ${email}`);
       return res.status(403).json({ message: 'Email not verified. Please verify your email.' });
     }
+    
     const isPasswordValid = await bcryptHelper.comparePassword(password, user.password);
     if (!isPasswordValid) {
       logger.warn(`Login failed. Invalid credentials: ${email}`);
@@ -103,7 +116,14 @@ const login = async (req, res) => {
       maxAge: 1000 * 60 * 60, 
     });
     logger.info(`User logged in successfully: ${email}`);
-    return res.status(200).json({ token, user });
+    
+      //   const roleData = await Role.findOne({ where: { id: user.roleId } });
+      //   if (!roleData) {
+      //   logger.warn(`Invalid role provided during registration: ${user.roleId}`);
+      //   return res.status(400).json({ message: 'Invalid role' });
+      // }
+      console.log(user);
+    return res.status(200).json({ token, user});
   } catch (error) {
     return handleError(res, error, 'Login error');
   }
