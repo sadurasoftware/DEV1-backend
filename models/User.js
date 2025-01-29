@@ -11,7 +11,7 @@ const User = sequelize.define('User', {
   email: { type: DataTypes.STRING, unique: true, allowNull: false },
   password: { type: DataTypes.STRING, allowNull: false },
   isVerified: { type: DataTypes.BOOLEAN, defaultValue: false }, 
-  roleName:{ type:DataTypes.STRING, allowNull:false  }
+  roleId:{ type:DataTypes.INTEGER, allowNull:false  }
 });
 
 User.associate = models => {

@@ -9,6 +9,7 @@ const { apiLimiter } = require('./middlewares/rateLimit');
 const logger = require('./config/logger');
 const { errorHandler } = require('./middlewares/errorHandler');
 const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
 dotenv.config();
 
 const app = express();
@@ -41,6 +42,7 @@ app.use(cors(corsOptions));
 
 app.use('/api/', apiLimiter);  
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 
 app.use((err, req, res, next) => {
   logger.error(err.message);

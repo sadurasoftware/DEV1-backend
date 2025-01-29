@@ -44,7 +44,7 @@ const register = async (req, res) => {
       email,
       password: hashedPassword,
       isVerified: false,
-      roleName: roleData.name,
+      roleId: roleData.id,
     });
     const tokenPayload = { id: newUser.id, email: newUser.email, username: newUser.username };
     const token = jwtHelper.generateToken(tokenPayload, process.env.JWT_SECRET, '1h');
