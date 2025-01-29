@@ -29,15 +29,11 @@ const register = async (req, res) => {
       logger.warn(`Registration failed. User already exists: ${email}`);
       return res.status(400).json({ message: 'User already exists' });
     }
-
     const roleData = await Role.findOne({ where: { name: role } });
     if (!roleData) {
       logger.warn(`Invalid role provided during registration: ${role}`);
       return res.status(400).json({ message: 'Invalid role' });
     }
-
-    
-
     const hashedPassword = await bcryptHelper.hashPassword(password);
     const newUser = await User.create({
       username,
@@ -202,7 +198,6 @@ const forgetPassword = async (req, res) => {
     }
     const token = jwtHelper.generateToken({ email }, process.env.JWT_SECRET, '1h');
     const url = `${process.env.FORGET_PASSWORD_URL}?token=${token}`;
-
     await emailHelper.forgotPasswordEmail(user.email, url, user.username);
     logger.info(`Password reset link sent successfully to: ${email}`);
     return res.status(200).json({ message: 'Password reset link sent successfully' });
@@ -213,6 +208,7 @@ const forgetPassword = async (req, res) => {
 
 const getResetPassword = async (req, res) => {
   const { token } = req.query; 
+  
   if (!token) {
     logger.warn('Reset password failed. Missing token');
     return res.status(400).json({ message: 'Token is required to reset password.' });
@@ -226,6 +222,7 @@ const getResetPassword = async (req, res) => {
       return res.status(404).json({ message: 'User not found.' });
     }
     return res.redirect(`http://localhost:5173/reset-password?token=${token}`);
+   
   } catch (error) {
     logger.error('Error verifying reset password token', error);
     return res.status(400).json({ message: 'Invalid or expired token' });
@@ -309,4 +306,4 @@ module.exports = {
   getResetPassword,
   resetPassword,
   changePassword
-};
+}
