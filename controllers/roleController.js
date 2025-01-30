@@ -2,13 +2,14 @@ const Role=require('../models/Role');
 const logger=require('../config/logger');
 const createRole=async(req,res)=>{
     try{
-        const {name,description}=req.body;
+        const { name } = req.body;
+        console.log(req.body);
         const existingRole=await Role.findOne({where:{name}});
         if(existingRole){
             logger.warn('Create role failed. Role already exists');
             return res.status(400).json({message:'Role already exists'});
         }
-        const role=await Role.create({name,description});
+        const role=await Role.create({name});
         logger.info('Role created successfully');
         return res.status(201).json({message:'Role created successfully',role});
     }catch(error){
