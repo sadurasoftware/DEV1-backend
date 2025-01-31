@@ -19,7 +19,6 @@ async function getUser(req, res) {
   }
 }
 
-
 async function updateUser(req, res) {
   try {
     const {id} = req.params;  
@@ -44,12 +43,14 @@ async function updateUser(req, res) {
   }
 }
 
-
-
 const getUsers=async(req,res)=>{
   try{
-     const user=await User.findAll();
-     res.status(200).json(user);
+    const users = await User.findAll({
+      where: {
+        roleId: 3
+      }
+    });
+     res.status(200).json(users);
   }catch(err){
     console.log(err);
     res.status(500).json({message:"Server Error",error:err.message})
@@ -57,7 +58,20 @@ const getUsers=async(req,res)=>{
   }
 }
 
+const getAdmins=async(req,res)=>{
+  try{
+    const admins = await User.findAll({
+      where: {
+        roleId: 2
+      }
+    });
+     res.status(200).json(admins);
+  }catch(err){
+    console.log(err);
+    res.status(500).json({message:"Server Error",error:err.message})
 
+  }
+}
 
 async function getAdmin(req, res) {
   try {
@@ -83,10 +97,10 @@ async function getAdmin(req, res) {
   }
 }
 
-
 module.exports = {
   getUser,
   updateUser,
   getUsers,
+  getAdmins,
   getAdmin,
 };
