@@ -2,13 +2,14 @@ const Permission=require('../models/Permission');
 const logger = require('../config/logger');
 const createPermission=async(req,res)=>{
     try{
-        const {name,description}=req.body;
+        const {name}=req.body;
+        console.log(req.body);
         const existingPermission = await Permission.findOne({ where: { name } });
         if (existingPermission) {
             logger.warn('Create permission failed. Permission already exists');
             return res.status(400).json({ message: 'Permission already exists' });
         }
-        const permission=await Permission.create({name,description});
+        const permission=await Permission.create({name});
         logger.info('Permission created successfully');
         return res.status(201).json({message: 'Permission created successfully',permission});
     }catch(error){
@@ -44,14 +45,13 @@ const getPermissionById=async(req,res)=>{
 const updatePermission=async(req,res)=>{
     try{
         const {id}=req.params;
-        const {name,description}=req.body;
+        const {name}=req.body;
         const permission=await Permission.findByPk(id);
         if(!permission){
             logger.warn('Update permission failed. Permission not found');
             return res.status(404).json({message:'Permission not found'});
         }
         permission.name=name;
-        permission.description=description;
         await permission.save();
         logger.info('Permission updated successfully');
         return res.status(200).json({message:'Permission updated successfully',permission});

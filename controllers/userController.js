@@ -4,7 +4,6 @@ const { User } = require('../models');
 async function getUser(req, res) {
   try {
     const {id}=req.params;
-    console.log("userid:" + id)
     const user = await User.findByPk(id);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -15,6 +14,30 @@ async function getUser(req, res) {
     });
   } catch (error) {
     console.error(error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+}
+
+
+async function fetchUserData(req, res) {
+  try {
+    const {id} = req.params; 
+    const user = await User.findByPk(id, {
+      include: { model: Role } 
+    });
+
+ 
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    return res.status(200).json({
+      username: user.username,
+      email: user.email,
+      role: user.Role.name,  
+    });
+  } catch (error) {
+    console.error('Error fetching user data:', error);
     return res.status(500).json({ message: 'Server error' });
   }
 }
@@ -42,6 +65,7 @@ async function updateUser(req, res) {
     return res.status(500).json({ message: 'Server error' });
   }
 }
+
 
 const getUsers=async(req,res)=>{
   try{
@@ -99,6 +123,7 @@ async function getAdmin(req, res) {
 
 module.exports = {
   getUser,
+  fetchUserData,
   updateUser,
   getUsers,
   getAdmins,
