@@ -3,6 +3,7 @@ const logger = require('../config/logger');
 const createPermission=async(req,res)=>{
     try{
         const {name}=req.body;
+
         const existingPermission = await Permission.findOne({ where: { name } });
         if (existingPermission) {
             logger.warn('Create permission failed. Permission already exists');
