@@ -9,8 +9,7 @@ async function getUser(req, res) {
       return res.status(404).json({ message: 'User not found' });
     }
     return res.status(200).json({
-      username: user.username,
-      email: user.email,
+      userData:user
     });
   } catch (error) {
     console.error(error);
@@ -25,7 +24,6 @@ async function fetchUserData(req, res) {
     const user = await User.findByPk(id, {
       include: { model: Role } 
     });
-
  
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -97,29 +95,70 @@ const getAdmins=async(req,res)=>{
   }
 }
 
+
 async function getAdmin(req, res) {
   try {
     const {id}=req.params;
-    const user = await User.findByPk(id);
-
-        const roleData = await Role.findOne({ where: { id: user.roleId } });
-        if (!roleData) {
-        logger.warn(`Invalid role provided during registration: ${user.roleId}`);
-        return res.status(400).json({ message: 'Invalid role' });
-      }
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+    const admin = await User.findByPk(id);
+    if (!admin) {
+      return res.status(404).json({ message: 'Admin not found' });
     }
     return res.status(200).json({
-      username: user.username,
-      email: user.email,
-      role: roleData.name,
+      userData:admin
     });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: 'Server error' });
   }
 }
+
+async function fetchAdminData(req, res) {
+  try {
+    const {id} = req.params; 
+    const user = await User.findByPk(id, {
+      include: { model: Role } 
+    });
+ 
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    return res.status(200).json({
+      username: user.username,
+      email: user.email,
+      role: user.Role.name,  
+    });
+  } catch (error) {
+    console.error('Error fetching admin data:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+}
+
+
+async function updateAdmin(req, res) {
+  try {
+    const {id} = req.params;  
+    const {username, email} = req.body;  
+    
+    const user = await User.findByPk(id);
+    if (!user) {
+      return res.status(404).json({ message: 'Admin not found' });
+    }
+
+    user.username = username;
+    user.email = email;
+    await user.save();
+
+    return res.status(200).json({
+      message: 'Admin updated successfully',
+      user: { username: user.username, email: user.email }
+    });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+}
+
 
 module.exports = {
   getUser,
@@ -128,4 +167,6 @@ module.exports = {
   getUsers,
   getAdmins,
   getAdmin,
+  fetchAdminData,
+  updateAdmin,
 };
