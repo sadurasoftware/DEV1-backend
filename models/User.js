@@ -16,7 +16,8 @@ const User = sequelize.define('User', {
 
 User.associate = models => {
   User.belongsTo(models.Role, {
-    foreignKey: 'roleId'
+    foreignKey: 'roleId',
+    as: 'role',
   })
 }
 
