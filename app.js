@@ -45,6 +45,7 @@ app.use(cors(corsOptions));
 
 app.use('/api/', apiLimiter);  
 app.use('/api/auth', authRoutes);
+app.use('/api/user', userRoutes);
 app.use('/api/super-admin', userRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/permissions', permissionRoutes);

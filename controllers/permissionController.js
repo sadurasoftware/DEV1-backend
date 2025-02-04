@@ -44,7 +44,7 @@ const getPermissionById=async(req,res)=>{
 const updatePermission=async(req,res)=>{
     try{
         const {id}=req.params;
-        const {name,description}=req.body;
+        const {name}=req.body;
         const permission=await Permission.findByPk(id);
         if(!permission){
             logger.warn('Update permission failed. Permission not found');
