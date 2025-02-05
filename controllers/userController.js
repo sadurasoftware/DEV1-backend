@@ -30,9 +30,7 @@ async function fetchUserData(req, res) {
     }
 
     return res.status(200).json({
-      username: user.username,
-      email: user.email,
-      role: user.Role.name,  
+      userData:user
     });
   } catch (error) {
     console.error('Error fetching user data:', error);
@@ -56,7 +54,7 @@ async function updateUser(req, res) {
 
     return res.status(200).json({
       message: 'User updated successfully',
-      user: { username: user.username, email: user.email }
+      userData:user
     });
   } catch (error) {
     console.error('Error updating user:', error);
@@ -99,12 +97,12 @@ const getAdmins=async(req,res)=>{
 async function getAdmin(req, res) {
   try {
     const {id}=req.params;
-    const admin = await User.findByPk(id);
-    if (!admin) {
+    const user = await User.findByPk(id);
+    if (!user) {
       return res.status(404).json({ message: 'Admin not found' });
     }
     return res.status(200).json({
-      userData:admin
+      userData:user
     });
   } catch (error) {
     console.error(error);
@@ -124,9 +122,7 @@ async function fetchAdminData(req, res) {
     }
 
     return res.status(200).json({
-      username: user.username,
-      email: user.email,
-      role: user.Role.name,  
+      userData:user 
     });
   } catch (error) {
     console.error('Error fetching admin data:', error);
@@ -151,7 +147,7 @@ async function updateAdmin(req, res) {
 
     return res.status(200).json({
       message: 'Admin updated successfully',
-      user: { username: user.username, email: user.email }
+      userData:user 
     });
   } catch (error) {
     console.error('Error updating user:', error);
