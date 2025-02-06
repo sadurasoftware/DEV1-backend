@@ -6,4 +6,12 @@ const Module=sequelize.define("Module",{
     name:{type:DataTypes.STRING,allowNull:false,unique:true}
 });
 
+Module.associate = (models) => {
+    Module.belongsToMany(models.Role, {
+      through: models.RoleModule,
+      foreignKey: 'moduleId',
+      as: 'roles',
+    });
+}
+
 module.exports=Module;

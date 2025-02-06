@@ -1,7 +1,6 @@
 const Module=require('../models/Module');
 const logger = require('../config/logger');
 
-
 const createModule=async(req,res)=>{
     try{
         const {name}=req.body;
@@ -19,7 +18,6 @@ const createModule=async(req,res)=>{
     }
 }
 
-
 const getModule=async(req,res)=>{
     try{
         const module=await Module.findAll();
@@ -30,7 +28,6 @@ const getModule=async(req,res)=>{
         return res.status(500).json({message:'server error'});
     }
 }
-
 
 const getModuleById=async(req,res)=>{
     try{
@@ -47,7 +44,6 @@ const getModuleById=async(req,res)=>{
         return res.status(500).json({message:'server error'});
     }
 }
-
 
 const updateModule=async(req,res)=>{
     try{
@@ -67,7 +63,6 @@ const updateModule=async(req,res)=>{
         return res.status(500).json({message:'server error'});
     }
 }
-
 
 const deleteModule=async(req,res)=>{
     try{
