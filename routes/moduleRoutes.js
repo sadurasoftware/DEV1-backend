@@ -4,6 +4,8 @@ const ModuleController=require('../controllers/moduleController');
 
 router.post('/create', ModuleController.createModule);
 router.get('/get', ModuleController.getModule);
+router.get('/get/:id', ModuleController.getModuleById);
+router.put('/update/:id', ModuleController.updateModule);
 router.delete('/delete/:id',ModuleController.deleteModule);
 
 
