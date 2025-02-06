@@ -23,6 +23,7 @@ const register = async (req, res) => {
   try {
     const { username, email, password, role } = req.body;
     console.log(req.body);
+    console.log('Password received:', req.body.password);
     logger.info(`Registering user: ${email}`);
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
