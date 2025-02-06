@@ -21,7 +21,12 @@ Role.associate = models => {
     as: 'users',
     // onDelete: 'CASCADE', // Optional: delete all users with this role when the role is deleted
   });
-  
+
+  Role.belongsToMany(models.Module, {
+    through: models.RoleModule,
+    foreignKey: 'roleId',
+    as: 'modules',
+  });
 };
 
 module.exports = Role;
