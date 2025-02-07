@@ -7,5 +7,4 @@ const RoleModule=sequelize.define("RoleModule",{
     moduleId:{type:DataTypes.INTEGER,allowNull:false},
 });
 
-
 module.exports=RoleModule;
