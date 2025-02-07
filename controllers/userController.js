@@ -1,5 +1,5 @@
 const { User } = require('../models');
-
+const logger = require('../config/logger');
 
 async function getUser(req, res) {
   try {
@@ -12,11 +12,9 @@ async function getUser(req, res) {
       userData:user
     });
   } catch (error) {
-    console.error(error);
     return res.status(500).json({ message: 'Server error' });
   }
 }
-
 
 async function fetchUserData(req, res) {
   try {
@@ -33,7 +31,6 @@ async function fetchUserData(req, res) {
       userData:user
     });
   } catch (error) {
-    console.error('Error fetching user data:', error);
     return res.status(500).json({ message: 'Server error' });
   }
 }
@@ -57,11 +54,9 @@ async function updateUser(req, res) {
       userData:user
     });
   } catch (error) {
-    console.error('Error updating user:', error);
     return res.status(500).json({ message: 'Server error' });
   }
 }
-
 
 const getUsers=async(req,res)=>{
   try{
@@ -72,7 +67,6 @@ const getUsers=async(req,res)=>{
     });
      res.status(200).json(users);
   }catch(err){
-    console.log(err);
     res.status(500).json({message:"Server Error",error:err.message})
 
   }
@@ -93,7 +87,6 @@ const getAdmins=async(req,res)=>{
   }
 }
 
-
 async function getAdmin(req, res) {
   try {
     const {id}=req.params;
@@ -105,7 +98,6 @@ async function getAdmin(req, res) {
       userData:user
     });
   } catch (error) {
-    console.error(error);
     return res.status(500).json({ message: 'Server error' });
   }
 }
@@ -125,7 +117,6 @@ async function fetchAdminData(req, res) {
       userData:user 
     });
   } catch (error) {
-    console.error('Error fetching admin data:', error);
     return res.status(500).json({ message: 'Server error' });
   }
 }
@@ -150,11 +141,9 @@ async function updateAdmin(req, res) {
       userData:user 
     });
   } catch (error) {
-    console.error('Error updating user:', error);
     return res.status(500).json({ message: 'Server error' });
   }
 }
-
 
 module.exports = {
   getUser,
