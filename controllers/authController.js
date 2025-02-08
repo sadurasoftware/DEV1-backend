@@ -126,20 +126,26 @@ const login = async (req, res) => {
   }
 };
 
+
 const verifyEmail = async (req, res) => {
   const { token } = req.params;
+  
   if (!token) {
     logger.warn('Verification failed. Missing token');
     return res.status(400).json({ error: 'Token is missing' });
   }
+
   try {
-    const { email } = jwt.verify(token, process.env.JWT_SECRET);
+    const { email } = jwt.verify(token, process.env.JWT_SECRET); 
     logger.info(`Verifying email for: ${email}`);
+    
     const user = await User.findOne({ where: { email } });
+
     if (!user) {
       logger.warn(`Verification failed. User not found: ${email}`);
       return res.status(400).json({ error: 'Invalid token or user not found' });
     }
+
     if (user.isVerified) {
       logger.info(`Email already verified: ${email}`);
       return res.set("Content-Type", "text/html").send(
@@ -159,6 +165,7 @@ const verifyEmail = async (req, res) => {
         )
       );
     }
+
     user.isVerified = true;
     await user.save();
     logger.info(`Email verified successfully: ${email}`);
@@ -167,7 +174,7 @@ const verifyEmail = async (req, res) => {
         `<div style="text-align:center; font-family: Arial, sans-serif; padding: 20px;">
           <div style="display: inline-block; background-color: #e6f7e6; padding: 20px; border-radius: 10px; border: 2px solid #4CAF50; text-align: center; max-width: 400px;">
             <h2 style="color: #4CAF50; font-size: 24px; font-weight: bold;">
-              Account Verified Successfully... You can Login now.
+              Your email is successfully verified. You can log in now.
             </h2>
             <div style="font-size: 40px; color: #4CAF50; margin-bottom: 20px;">&#10004;</div>
             <a href="http://localhost:5173/login" 
@@ -178,10 +185,35 @@ const verifyEmail = async (req, res) => {
         </div>`
       )
     );
+    
   } catch (error) {
+    if (error instanceof jwt.TokenExpiredError) {
+      logger.warn('Verification failed. Token expired.');
+      return res.set("Content-Type", "text/html").send(
+        Buffer.from(
+          `<div style="text-align:center; font-family: Arial, sans-serif; padding: 20px;">
+            <div style="display: inline-block; background-color: #e6f7e6; padding: 20px; border-radius: 10px; border: 2px solid #FF6347; text-align: center; max-width: 400px;">
+              <h2 style="color: #FF6347; font-size: 24px; font-weight: bold;">
+                The token has expired. Please request a new verification email.
+              </h2>
+              <div style="font-size: 40px; color: #FF6347; margin-bottom: 20px;">&#10060;</div>
+              <form action="/api/auth/resendVerifyEmail" method="POST">
+                <input type="hidden" name="email" value="${req.body.email}">
+                <button type="submit" style="background-color: #FF6347; color: white; padding: 10px 20px; border-radius: 5px; font-size: 18px;">
+                  Resend Verification Email
+                </button>
+              </form>
+            </div>
+          </div>`
+        )
+      );
+    }
+    
     return handleError(res, error, 'Verify email error');
   }
 };
+
+
 
 const forgetPassword = async (req, res) => {
   console.log("Forget password route hit");
