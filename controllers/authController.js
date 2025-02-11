@@ -21,9 +21,14 @@ const register = async (req, res) => {
     return res.status(400).json({ errors: errors.array() });
   }
   try {
-    const { username, email, password, role } = req.body;
-    console.log(req.body);
+    const { username, email, password, confirmPassword, role } = req.body;
     console.log('Password received:', req.body.password);
+
+    if (password !== confirmPassword) {
+      logger.warn(`Passwords do not match during registration: ${email}`);
+      return res.status(400).json({ message: 'Passwords do not match' });
+    }
+    
     logger.info(`Registering user: ${email}`);
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
@@ -44,7 +49,7 @@ const register = async (req, res) => {
       roleId: roleData.id,
     });
     const tokenPayload = { id: newUser.id, email: newUser.email, username: newUser.username };
-    const token = jwtHelper.generateToken(tokenPayload, process.env.JWT_SECRET, '1h');
+    const token = jwtHelper.generateToken(tokenPayload, process.env.JWT_SECRET, '2m');
     const verificationUrl = `${process.env.VERIFICATION_URL}/verify-email/${token}`;
     await emailHelper.verificationEmail(email, verificationUrl, username);
     logger.info(`User registered successfully: ${email}`);
@@ -60,6 +65,7 @@ const register = async (req, res) => {
 const resendVerificationEmail = async (req, res) => {
   try {
     const { email } = req.body;
+    console.log('Received email:', email);
     logger.info(`Resending verification email to: ${email}`);
     const user = await User.findOne({ where: { email } });
     if (!user) {
@@ -70,7 +76,7 @@ const resendVerificationEmail = async (req, res) => {
       logger.info(`User already verified: ${email}`);
       return res.status(400).json({ error: 'User is already verified' });
     }
-    const token = jwtHelper.generateToken({ email }, process.env.JWT_SECRET, '1h');
+    const token = jwtHelper.generateToken({ email }, process.env.JWT_SECRET, '2m');
     const verificationUrl = `${process.env.VERIFICATION_URL}/verify-email/${token}`;
     await emailHelper.verificationEmail(email, verificationUrl, user.username);
     logger.info(`Verification email resent successfully: ${email}`);
@@ -129,14 +135,14 @@ const login = async (req, res) => {
 
 const verifyEmail = async (req, res) => {
   const { token } = req.params;
-  
+
   if (!token) {
     logger.warn('Verification failed. Missing token');
     return res.status(400).json({ error: 'Token is missing' });
   }
 
   try {
-    const { email } = jwt.verify(token, process.env.JWT_SECRET); 
+    const { email } = jwt.verify(token, process.env.JWT_SECRET);
     logger.info(`Verifying email for: ${email}`);
     
     const user = await User.findOne({ where: { email } });
@@ -189,6 +195,10 @@ const verifyEmail = async (req, res) => {
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {
       logger.warn('Verification failed. Token expired.');
+      
+      // Extract the email from the token
+      const { email } = jwt.decode(token);
+      
       return res.set("Content-Type", "text/html").send(
         Buffer.from(
           `<div style="text-align:center; font-family: Arial, sans-serif; padding: 20px;">
@@ -198,7 +208,7 @@ const verifyEmail = async (req, res) => {
               </h2>
               <div style="font-size: 40px; color: #FF6347; margin-bottom: 20px;">&#10060;</div>
               <form action="/api/auth/resendVerifyEmail" method="POST">
-                <input type="hidden" name="email" value="${req.body.email}">
+                <input type="hidden" name="email" value="${email}">
                 <button type="submit" style="background-color: #FF6347; color: white; padding: 10px 20px; border-radius: 5px; font-size: 18px;">
                   Resend Verification Email
                 </button>
@@ -212,6 +222,7 @@ const verifyEmail = async (req, res) => {
     return handleError(res, error, 'Verify email error');
   }
 };
+
 
 
 
