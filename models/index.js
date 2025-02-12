@@ -1,22 +1,61 @@
 const sequelize = require('../config/database');
+//const bcrypt = require('bcrypt');
 const User = require('./User');
 const Role = require('./Role');
-const Module = require('./Module');
 const Permission = require('./Permission');
-const ModulePermissionss = require('./ModulePermissionss');
-const RoleModuless = require('./roleModule');
+const Module = require('./Module');
+const RoleModulePermission = require('./RoleModulePermission');
 
-const models = { User, Role, Module, Permission, ModulePermissionss, RoleModuless };
+const models = { User, Role, Permission, Module, RoleModulePermission };
 
-User.associate(models);
-Role.associate(models);
-// Module.associate(models);
-// Permission.associate(models);
-ModulePermissionss.associate(models);
-RoleModuless.associate(models);
+if (User.associate) {
+  User.associate(models);
+}
+if (Role.associate) {
+  Role.associate(models);
+}
+if (Permission.associate) {
+  Permission.associate(models);
+}
+if (Module.associate) {
+  Module.associate(models);
+}
+if (RoleModulePermission.associate) {
+  RoleModulePermission.associate(models);
+}
 
-sequelize.sync({ alter: true }).then(() => {
-  console.log('Database synced successfully');
-});
+// async function createSuperAdmin() {
+//   try {
+//     const existingAdmin = await User.findOne({ where: { email: 'bala@gmail.com' } });
+
+//     if (!existingAdmin) {
+//       const hashedPassword = await bcrypt.hash('Balak123@', 10); // Encrypt password before saving
+
+//       await User.create({
+//         username: 'balak',
+//         email: 'bala@gmail.com',
+//         password: hashedPassword,
+//         isVerified:1,
+//         roleId: 1,
+//       });
+
+//       console.log('SuperAdmin user created successfully.');
+//     } else {
+//       console.log('SuperAdmin already exists.');
+//     }
+//   } catch (error) {
+//     console.error('Error creating SuperAdmin:', error);
+//   }
+// }
+
+sequelize
+  .sync({ alter: true, force: false })
+  .then(() => {
+    console.log('Database synced successfully');
+    //createSuperAdmin(); 
+  })
+  .catch((error) => {
+    console.error('Error syncing the database:', error);
+  });
 
 module.exports = models;

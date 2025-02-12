@@ -13,7 +13,7 @@ const userRoutes = require('./routes/userRoutes');
 const roleRoutes = require('./routes/roleRoutes');
 const permissionRoutes = require('./routes/permissionRoutes');
 const moduleRoutes = require('./routes/moduleRoutes');
-
+const roleModulePermissionRoutes = require('./routes/rolemodulepermissionRoutes');
 dotenv.config();
 
 const app = express();
@@ -52,7 +52,7 @@ app.use('/api/super-admin', userRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/permissions', permissionRoutes);
 app.use('/api/modules', moduleRoutes);
-
+app.use('/api/role-module-permissions', roleModulePermissionRoutes)
 
 app.use((err, req, res, next) => {
   logger.error(err.message);

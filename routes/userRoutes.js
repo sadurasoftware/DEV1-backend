@@ -12,5 +12,5 @@ router.put('/:id', userController.updateUser);
 router.get('/:id', userController.getAdmin);
 router.get('/:id', userController.fetchAdminData);
 router.put('/:id', userController.updateAdmin);
-
+router.delete('/:id',userController.deleteuser)
 module.exports=router;

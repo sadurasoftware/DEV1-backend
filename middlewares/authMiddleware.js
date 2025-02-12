@@ -2,7 +2,8 @@ const jwt = require('jsonwebtoken');
 const logger = require('../config/logger');
 
 const authenticateToken = (req, res, next) => {
-  const token = req.body.token;
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; 
   if (!token) {
     logger.warn('No token provided');
     return res.status(401).json({ message: 'Access denied. No token provided.' });
@@ -23,4 +24,4 @@ const authenticateToken = (req, res, next) => {
   }
 };
 
-module.exports = authenticateToken;
+module.exports = {authenticateToken}
