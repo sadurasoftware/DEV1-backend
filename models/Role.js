@@ -14,19 +14,17 @@ const Role = sequelize.define('Role', {
   },
 });
 
-Role.associate = models => {
- 
+Role.associate = (models) => {
   Role.hasMany(models.User, {
     foreignKey: 'roleId',
     as: 'users',
-    // onDelete: 'CASCADE', // Optional: delete all users with this role when the role is deleted
   });
-
-  Role.belongsToMany(models.Module, {
-    through: models.RoleModule,
-    foreignKey: 'roleId',
-    as: 'modules',
-  });
+  // Role.belongsToMany(models.Module, {
+  //   through: models.RoleModuless,
+  //   foreignKey: 'roleId',
+  //   as: 'modules',
+  // });
+ 
 };
 
 module.exports = Role;
