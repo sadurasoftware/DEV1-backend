@@ -10,21 +10,22 @@ const Role = sequelize.define('Role', {
   name: {
     type: DataTypes.STRING,
     allowNull: false,
-    unique: true,
+    
   },
 });
 
-Role.associate = (models) => {
+Role.associate = models => {
   Role.hasMany(models.User, {
     foreignKey: 'roleId',
     as: 'users',
   });
-  // Role.belongsToMany(models.Module, {
-  //   through: models.RoleModuless,
-  //   foreignKey: 'roleId',
-  //   as: 'modules',
-  // });
- 
+};
+
+Role.associate = models => {
+  Role.hasMany(models.RoleModulePermission, {
+    foreignKey: 'roleId',
+    as: 'RoleModulePermissions',
+  });
 };
 
 module.exports = Role;

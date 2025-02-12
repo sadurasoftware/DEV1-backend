@@ -21,13 +21,11 @@ const register = async (req, res) => {
     return res.status(400).json({ errors: errors.array() });
   }
   try {
-    const { username, email, password, confirmPassword, role } = req.body;
-    console.log('Password received:', req.body.password);
-
-    if (password !== confirmPassword) {
-      logger.warn(`Passwords do not match during registration: ${email}`);
-      return res.status(400).json({ message: 'Passwords do not match' });
-    }
+    const { username, email, password,role } = req.body;
+    // if (password !== confirmPassword) {
+    //   logger.warn(`Passwords do not match during registration: ${email}`);
+    //   return res.status(400).json({ message: 'Passwords do not match' });
+    // }
     
     logger.info(`Registering user: ${email}`);
     const existingUser = await User.findOne({ where: { email } });
@@ -65,7 +63,6 @@ const register = async (req, res) => {
 const resendVerificationEmail = async (req, res) => {
   try {
     const { email } = req.body;
-    console.log('Received email:', email);
     logger.info(`Resending verification email to: ${email}`);
     const user = await User.findOne({ where: { email } });
     if (!user) {
@@ -110,7 +107,7 @@ const login = async (req, res) => {
       logger.warn(`Login failed. Invalid credentials: ${email}`);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
-    const tokenPayload = { id: user.id, email: user.email };
+    const tokenPayload = { id: user.id, email: user.email ,roleId: user.roleId};
     const token = jwtHelper.generateToken(tokenPayload, process.env.JWT_SECRET, '1h');
     res.cookie('authToken', token, {
       httpOnly: true,      
@@ -195,8 +192,6 @@ const verifyEmail = async (req, res) => {
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {
       logger.warn('Verification failed. Token expired.');
-      
-      // Extract the email from the token
       const { email } = jwt.decode(token);
       
       return res.set("Content-Type", "text/html").send(
@@ -223,11 +218,7 @@ const verifyEmail = async (req, res) => {
   }
 };
 
-
-
-
 const forgetPassword = async (req, res) => {
-  console.log("Forget password route hit");
   const { email } = req.body;
   if (!email) {
     logger.warn('Forget password failed. Missing email');
@@ -252,7 +243,6 @@ const forgetPassword = async (req, res) => {
 
 const getResetPassword = async (req, res) => {
   const { token } = req.query; 
-  
   if (!token) {
     logger.warn('Reset password failed. Missing token');
     return res.status(400).json({ message: 'Token is required to reset password.' });
