@@ -1,56 +1,75 @@
 const { RoleModulePermission, Role, Module, Permission } = require('../models');
+const { Op } = require('sequelize');
 const logger = require('../config/logger');
+
 const createRoleModulePermission = async (req, res) => {
+  const transaction = await RoleModulePermission.sequelize.transaction();
   try {
-    const { roleId, moduleId, permissionId } = req.body;
-    if (!roleId || !Array.isArray(moduleId) || !Array.isArray(permissionId)) {
-      logger.warn('Create role module permission failed. Invalid data.');
-      return res.status(400).json({
-        message: 'roleId, moduleId (array), and permissionId (array) are required.',
-      });
+    const { roleId, modulePermissions } = req.body;
+    if (!roleId || !Array.isArray(modulePermissions)) {
+      logger.warn("Invalid input format.");
+      await transaction.rollback();
+      return res.status(400).json({ message: "Invalid input format." });
     }
-    if (moduleId.length !== permissionId.length) {
-      logger.warn('Create role module permission failed. Invalid data.');
-      return res.status(400).json({
-        message: 'moduleId and permissionId arrays must have the same length.',
-      });
-    }
-    const role = await Role.findByPk(roleId);
-    if (!role) return res.status(404).json({ message: 'Role not found.' });
-    const modules = await Module.findAll({ where: { id: moduleId } });
-    if (modules.length !== moduleId.length)
-      return res.status(404).json({ message: 'Some modules not found.' });
-    const permissions = await Permission.findAll({ where: { id: permissionId } });
-    if (permissions.length !== permissionId.length)
-      return res.status(404).json({ message: 'Some permissions not found.' });
-    const roleModulePermissions = [];
-    for (let i = 0; i < moduleId.length; i++) {
-      const existingPermission = await RoleModulePermission.findOne({
-        where: { roleId, moduleId: moduleId[i], permissionId: permissionId[i] },
-      });
 
-      if (!existingPermission) {
-        roleModulePermissions.push({
+    const role = await Role.findByPk(roleId, { transaction });
+    if (!role) {
+      await transaction.rollback();
+      return res.status(404).json({ message: "Role not found." });
+    }
+    const moduleIds = modulePermissions.map(mp => mp.moduleId);
+    const permissionIds = modulePermissions.flatMap(mp => 
+      mp.permissions.map(p => parseInt(p.permissionId, 10)) 
+    );
+    const [modules, permissions] = await Promise.all([
+      Module.findAll({ where: { id: { [Op.in]: moduleIds } }, transaction }),
+      Permission.findAll({ where: { id: { [Op.in]: permissionIds } }, transaction })
+    ]);
+
+    const missingModules = moduleIds.filter(id => !modules.some(m => m.id === id));
+    const missingPermissions = permissionIds.filter(id => !permissions.some(p => p.id === id));
+
+    if (missingModules.length > 0 || missingPermissions.length > 0) {
+      await transaction.rollback();
+      return res.status(404).json({
+        message: "Some modules or permissions not found.",
+        missingModules,
+        missingPermissions
+      });
+    }
+    const existingPermissions = await RoleModulePermission.findAll({
+      where: {
+        roleId,
+        moduleId: { [Op.in]: moduleIds },
+        permissionId: { [Op.in]: permissionIds }
+      },
+      transaction
+    });
+    const existingSet = new Set(existingPermissions.map(perm => `${perm.moduleId}-${perm.permissionId}`));
+    const newPermissions = modulePermissions.flatMap(({ moduleId, permissions }) =>
+      permissions
+        .map(({ permissionId }) => ({
           roleId,
-          moduleId: moduleId[i],
-          permissionId: permissionId[i],
-        });
-      }
-    }
+          moduleId,
+          permissionId
+        }))
+        .filter(({ moduleId, permissionId }) => !existingSet.has(`${moduleId}-${permissionId}`))
+    );
 
-    if (roleModulePermissions.length === 0) {
-      logger.warn('Create role module permission failed. All permissions already exist.');
-      return res.status(409).json({
-        message: 'All permissions already exist for the provided role, modules, and permissions.',
-      });
+    if (newPermissions.length === 0) {
+      await transaction.rollback();
+      return res.status(409).json({ message: "All permissions already exist." });
     }
+    logger.info("Permissions created successfully.");
+    await RoleModulePermission.bulkCreate(newPermissions, { transaction });
+    await transaction.commit();
+    return res.status(201).json({ message: "Permissions created successfully." ,newPermissions});
 
-    await RoleModulePermission.bulkCreate(roleModulePermissions);
-    logger.info('Role module permissions created successfully.');
-    return res.status(201).json({ message: 'Permissions created successfully.' });
   } catch (error) {
-    console.error('Error creating RoleModulePermission:', error);
-    return res.status(500).json({ message: 'An error occurred.' });
+    logger.error("Error creating RoleModulePermission:", error);
+    await transaction.rollback();
+    console.error("Error creating RoleModulePermission:", error);
+    return res.status(500).json({ message: "An error occurred.", error: error.message });
   }
 };
 
@@ -150,12 +169,12 @@ const getModulesAndPermissionsByRole = async (req, res) => {
       const existingModule = response.roleModules.find(m => m.moduleId === module.id);
 
       if (existingModule) {
-        existingModule.Permissions.push(permission.name);
+        existingModule.Permissions.push(permission.id);
       } else {
         response.roleModules.push({
           moduleId: module.id,
           moduleName: module.name,
-          Permissions: [permission.name], 
+          Permissions: [permission.id], 
         });
       }
     });
@@ -169,107 +188,115 @@ const getModulesAndPermissionsByRole = async (req, res) => {
 };
 
 const addPermissionsToRole = async (req, res) => {
-  try {
-    const { roleId, moduleId, permissionId } = req.body;
+  const { roleId, modulePermissions } = req.body;
+  if (!roleId || !Array.isArray(modulePermissions)) {
+    return res.status(400).json({ message: "roleId and modulePermissions are required." });
+  }
+  const transaction = await RoleModulePermission.sequelize.transaction();
 
-    if (!roleId || !moduleId || !permissionId || !Array.isArray(moduleId) || !Array.isArray(permissionId)) {
-      return res.status(400).json({ message: 'roleId, moduleId, and permissionId are required. moduleId and permissionId should be arrays.' });
-    }
+  try {
     const role = await Role.findByPk(roleId);
     if (!role) {
-      logger.warn('Role not found.');
-      return res.status(404).json({ message: 'Role not found.' });
+      await transaction.rollback();
+      return res.status(404).json({ message: "Role not found." });
     }
-    const createdPermissions = [];
-    for (const modId of moduleId) {
-      const module = await Module.findByPk(modId);
+    const permissionsToCreate = [];
+    for (const { moduleId, permissions } of modulePermissions) {
+      const module = await Module.findByPk(moduleId);
       if (!module) {
-        logger.warn(`Module with ID ${modId} not found.`);
-        return res.status(404).json({ message: `Module with ID ${modId} not found.` });
+        await transaction.rollback();
+        return res.status(404).json({ message: `Module with ID ${moduleId} not found.` });
       }
-
-      for (const permId of permissionId) {
-        const permission = await Permission.findByPk(permId);
-        if (!permission) {
-          return res.status(404).json({ message: `Permission with ID ${permId} not found.` });
-        }
-        const existingPermission = await RoleModulePermission.findOne({
-          where: {
-            roleId,
-            moduleId: modId,
-            permissionId: permId,
-          },
-        });
-
-        if (existingPermission) {
-          logger.warn(`Permission with ID ${permId} already exists for this role and module.`);
-          return res.status(409).json({ message: `Permission with ID ${permId} already exists for this role and module.` });
-        }
-        const newPermission = await RoleModulePermission.create({
+      const permissionIds = permissions.map(p => p.permissionId);
+      const foundPermissions = await Permission.findAll({
+        where: { id: permissionIds }
+      });
+      const missingPermissions = permissionIds.filter(id => !foundPermissions.some(p => p.id === id));
+      if (missingPermissions.length > 0) {
+        logger.warn(`Some permissions not found: ${missingPermissions}`);
+        await transaction.rollback();
+        return res.status(404).json({ message: "Some permissions not found.", missingPermissions });
+      }
+      const existingPermissions = await RoleModulePermission.findAll({
+        where: {
           roleId,
-          moduleId: modId,
-          permissionId: permId,
-        });
-
-        createdPermissions.push(newPermission);
-      }
+          moduleId,
+          permissionId: permissionIds
+        },
+        transaction
+      });
+      const existingSet = new Set(existingPermissions.map(perm => `${perm.moduleId}-${perm.permissionId}`));
+      permissions.forEach(({ permissionId }) => {
+        if (!existingSet.has(`${moduleId}-${permissionId}`)) {
+          permissionsToCreate.push({ roleId, moduleId, permissionId });
+        }
+      });
     }
-    logger.info('Permissions added successfully.');
-    return res.status(201).json({ message: 'Permissions added successfully.', createdPermissions });
+    if (permissionsToCreate.length === 0) {
+      await transaction.rollback();
+      logger.warn("All permissions already exist for the provided role and modules.");
+      return res.status(409).json({ message: "All permissions already exist for the provided role and modules." });
+    }
+    logger.info("Adding permissions to the role...");
+    await RoleModulePermission.bulkCreate(permissionsToCreate, { transaction });
+    await transaction.commit();
+    return res.status(201).json({ message: "Permissions added successfully." });
   } catch (error) {
-    console.error('Error occurred while adding permissions:', error);
-    return res.status(500).json({ message: 'An error occurred while adding permissions.' });
+    logger.error("Error adding permissions:", error);
+    await transaction.rollback();
+    console.error("Error adding permissions:", error);
+    return res.status(500).json({ message: "An error occurred." });
   }
 };
 
 const removePermissionsFromRole = async (req, res) => {
+  const { roleId, modulePermissions } = req.body;
+
+  if (!roleId || !Array.isArray(modulePermissions)) {
+    return res.status(400).json({ message: "roleId and modulePermissions are required." });
+  }
+  const transaction = await RoleModulePermission.sequelize.transaction();
   try {
-    const { roleId, moduleId, permissionId } = req.body;
-    if (!roleId || !moduleId || !permissionId || !Array.isArray(moduleId) || !Array.isArray(permissionId)) {
-      return res.status(400).json({ message: 'roleId, moduleId, and permissionId are required. moduleId and permissionId should be arrays.' });
-    }
     const role = await Role.findByPk(roleId);
     if (!role) {
-      logger.warn('Role not found.');
-      return res.status(404).json({ message: 'Role not found.' });
+      await transaction.rollback();
+      return res.status(404).json({ message: "Role not found." });
     }
-    const removedPermissions = [];
-    for (const modId of moduleId) {
-      const module = await Module.findByPk(modId);
+    for (const { moduleId, permissions } of modulePermissions) {
+      const module = await Module.findByPk(moduleId);
       if (!module) {
-        logger.warn(`Module with ID ${modId} not found.`);
-        return res.status(404).json({ message: `Module with ID ${modId} not found.` });
+        await transaction.rollback();
+        return res.status(404).json({ message: `Module with ID ${moduleId} not found.` });
       }
-      for (const permId of permissionId) {
-        const permission = await Permission.findByPk(permId);
-        if (!permission) {
-          logger.warn(`Permission with ID ${permId} not found.`);
-          return res.status(404).json({ message: `Permission with ID ${permId} not found.` });
-        }
-        const permissionToRemove = await RoleModulePermission.findOne({
-          where: {
-            roleId,
-            moduleId: modId,
-            permissionId: permId,
-          },
-        });
+      const permissionIds = permissions.map(p => p.permissionId);
+      const existingPermissions = await RoleModulePermission.findAll({
+        where: { roleId, moduleId, permissionId: permissionIds },
+        transaction
+      });
 
-        if (!permissionToRemove) {
-          logger.warn(`Permission with ID ${permId} does not exist for this role and module.`);
-          return res.status(404).json({ message: `Permission with ID ${permId} does not exist for this role and module.` });
-        }
-        logger.info(`Permission with ID ${permId} removed successfully.`);
-        await permissionToRemove.destroy();
-        removedPermissions.push({ moduleId: modId, permissionId: permId });
+      if (existingPermissions.length === 0) {
+        await transaction.rollback();
+        return res.status(404).json({ message: "No permissions found to remove." });
       }
+      await RoleModulePermission.destroy({
+        where: {
+          roleId,
+          moduleId,
+          permissionId: permissionIds
+        },
+        transaction
+      });
     }
-    logger.info('Permissions removed successfully.');
-    return res.status(200).json({ message: 'Permissions removed successfully.', removedPermissions });
+    logger.info("Permissions removed successfully.")
+    await transaction.commit();
+    return res.status(200).json({ message: "Permissions removed successfully." });
   } catch (error) {
-    console.error('Error occurred while removing permissions:', error);
-    return res.status(500).json({ message: 'An error occurred while removing permissions.' });
+    await transaction.rollback();
+    console.error("Error removing permissions:", error);
+    return res.status(500).json({ message: "An error occurred." });
   }
 };
+
 const deleteModule = async (req, res) => {
   try {
     const { moduleId, moduleName } = req.body; 
@@ -298,8 +325,9 @@ const deleteModule = async (req, res) => {
 };
 const deletePermission = async (req, res) => {
   try {
-    const { permissionId, permissionName } = req.body; // Accept permissionId or permissionName
+    const { permissionId, permissionName } = req.body;
     if (!permissionId && !permissionName) {
+      logger.warn('Either permissionId or permissionName is required.');
       return res.status(400).json({ message: 'Either permissionId or permissionName is required.' });
     }
     let permission;
@@ -312,14 +340,80 @@ const deletePermission = async (req, res) => {
     if (!permission) {
       return res.status(404).json({ message: 'Permission not found.' });
     }
+    logger.info(`Deleting permission: ${permission.name}`)
     await RoleModulePermission.destroy({ where: { permissionId: permission.id } });
+    logger.info(`Deleted related role-module permissions for permission: ${permission.name}`);
     await permission.destroy();
-
+    logger.info(`Deleted permission: ${permission.name}`);
     return res.status(200).json({ message: 'Permission and its related role-module permissions deleted successfully.' });
-
   } catch (error) {
     console.error('Error occurred while deleting permission:', error);
     return res.status(500).json({ message: 'An error occurred while deleting the permission.' });
+  }
+};
+
+const updatePermission = async (req, res) => {
+  try {
+    const { permissionId, permissionName, newPermissionName } = req.body;
+
+    if ((!permissionId && !permissionName) || !newPermissionName) {
+      logger.warn('Either permissionId or permissionName and newPermissionName are required.');
+      return res.status(400).json({ message: 'Either permissionId or permissionName and newPermissionName are required.' });
+    }
+    let permission;
+    if (permissionId) {
+      permission = await Permission.findByPk(permissionId);
+    } else if (permissionName) {
+      permission = await Permission.findOne({ where: { name: permissionName } });
+    }
+
+    if (!permission) {
+      return res.status(404).json({ message: 'Permission not found.' });
+    }
+    logger.info(`Updating permission: ${permission.name}`)
+    await RoleModulePermission.update(
+      { permissionName: newPermissionName }, 
+      { where: { permissionId: permission.id } }
+    );
+    permission.name = newPermissionName;
+    await permission.save();
+    logger.info(`Updated permission: ${permission.name}`)
+    return res.status(200).json({ message: 'Permission updated successfully.', updatedPermission: permission });
+
+  } catch (error) {
+    console.error('Error occurred while updating permission:', error);
+    return res.status(500).json({ message: 'An error occurred while updating the permission.' });
+  }
+};
+const updateModule = async (req, res) => {
+  try {
+    const { moduleId, moduleName, newModuleName } = req.body;
+    if ((!moduleId && !moduleName) || !newModuleName) {
+      logger.warn('Either moduleId or moduleName and newModuleName are required.');
+      return res.status(400).json({ message: 'Either moduleId or moduleName and newModuleName are required.' });
+    }
+    let module;
+    if (moduleId) {
+      module = await Module.findByPk(moduleId);
+    } else if (moduleName) {
+      module = await Module.findOne({ where: { name: moduleName } });
+    }
+
+    if (!module) {
+      return res.status(404).json({ message: 'Module not found.' });
+    }
+    logger.info(`Updating module: ${module.name}`)
+    await RoleModulePermission.update(
+      { moduleName: newModuleName }, 
+      { where: { moduleId: module.id } }
+    );
+    module.name = newModuleName;
+    await module.save();
+    logger.info(`Updated module: ${module.name}`)
+    return res.status(200).json({ message: 'Module updated successfully.', updatedModule: module });
+  } catch (error) {
+    console.error('Error occurred while updating module:', error);
+    return res.status(500).json({ message: 'An error occurred while updating the module.' });
   }
 };
 
@@ -330,5 +424,7 @@ module.exports = {
   addPermissionsToRole,
   removePermissionsFromRole,
   deleteModule,
-  deletePermission
+  deletePermission,
+  updatePermission,
+  updateModule
 };

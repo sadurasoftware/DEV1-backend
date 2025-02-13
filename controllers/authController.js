@@ -1,6 +1,5 @@
 const { User } = require('../models');
 const { Role } = require('../models');
-const { validationResult } = require('express-validator');
 const bcryptHelper = require('../utils/bcryptHelper');
 const jwtHelper = require('../utils/jwtHelper');
 const logger = require('../config/logger');
@@ -15,11 +14,6 @@ const handleError = (res, error, message) => {
 };
 
 const register = async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    logger.warn('Validation failed during registration');
-    return res.status(400).json({ errors: errors.array() });
-  }
   try {
     const { username, email, password,role } = req.body;
     // if (password !== confirmPassword) {
@@ -84,11 +78,6 @@ const resendVerificationEmail = async (req, res) => {
 };
 
 const login = async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    logger.warn('Validation failed during login');
-    return res.status(400).json({ errors: errors.array() });
-  }
   try {
     const { email, password } = req.body;
     logger.info(`User login attempt: ${email}`);
@@ -122,7 +111,6 @@ const login = async (req, res) => {
       //   logger.warn(`Invalid role provided during registration: ${user.roleId}`);
       //   return res.status(400).json({ message: 'Invalid role' });
       // }
-      console.log(user);
     return res.status(200).json({ token, user});
   } catch (error) {
     return handleError(res, error, 'Login error');
@@ -132,12 +120,10 @@ const login = async (req, res) => {
 
 const verifyEmail = async (req, res) => {
   const { token } = req.params;
-
   if (!token) {
     logger.warn('Verification failed. Missing token');
     return res.status(400).json({ error: 'Token is missing' });
   }
-
   try {
     const { email } = jwt.verify(token, process.env.JWT_SECRET);
     logger.info(`Verifying email for: ${email}`);

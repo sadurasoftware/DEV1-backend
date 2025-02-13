@@ -41,40 +41,7 @@ const getPermissionById=async(req,res)=>{
         return res.status(500).json({message:'server error'});
     }
 }
-const updatePermission=async(req,res)=>{
-    try{
-        const {id}=req.params;
-        const {name}=req.body;
-        const permission=await Permission.findByPk(id);
-        if(!permission){
-            logger.warn('Update permission failed. Permission not found');
-            return res.status(404).json({message:'Permission not found'});
-        }
-        permission.name=name;
-        await permission.save();
-        logger.info('Permission updated successfully');
-        return res.status(200).json({message:'Permission updated successfully',permission});
-    }catch(error){
-        console.log(error);
-        return res.status(500).json({message:'server error'});
-    }
-}
-const deletePermission=async(req,res)=>{
-    try{
-        const {id}=req.params;
-        const permission=await Permission.findByPk(id);
-        if(!permission){
-            logger.warn('Delete permission failed. Permission not found');
-            return res.status(404).json({message:'Permission not found'});
-        }
-        await permission.destroy();
-        logger.info('Permission deleted successfully');
-        return res.status(200).json({message:'Permission deleted successfully',permission});
-    }catch(error){
-        console.log(error);
-        return res.status(500).json({message:'server error'});
-    }
-}
+
 module.exports={
-    createPermission,getPermission,getPermissionById,updatePermission,deletePermission
+    createPermission,getPermission,getPermissionById
 }
