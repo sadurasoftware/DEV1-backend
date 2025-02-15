@@ -3,6 +3,7 @@ const logger = require('../config/logger');
 
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
+  // const token = req.body.token;
   const token = authHeader && authHeader.split(' ')[1]; 
   if (!token) {
     logger.warn('No token provided');
