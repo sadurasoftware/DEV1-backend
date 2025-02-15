@@ -86,16 +86,16 @@ const permissionSchema=Joi.object({
   }),
 });
 
-const createRoleModulePermissionSchema = Joi.object({
-  roleId: Joi.number().integer().required(),
-  moduleId: Joi.array().items(Joi.number().integer().required()).required(),
-  permissionId: Joi.array().items(Joi.number().integer().required()).required(),
-}).custom((value, helpers) => {
-  if (value.moduleId.length !== value.permissionId.length) {
-    return helpers.message('moduleId and permissionId arrays must have the same length');
-  }
-  return value;
-});;
+// const createRoleModulePermissionSchema = Joi.object({
+//   roleId: Joi.number().integer().required(),
+//   moduleId: Joi.array().items(Joi.number().integer().required()).required(),
+//   permissionId: Joi.array().items(Joi.number().integer().required()).required(),
+// }).custom((value, helpers) => {
+//   if (value.moduleId.length !== value.permissionId.length) {
+//     return helpers.message('moduleId and permissionId arrays must have the same length');
+//   }
+//   return value;
+// });;
 
 const getModulesForRoleSchema = Joi.object({
   roleId: Joi.number().integer().required().messages({
@@ -201,7 +201,7 @@ module.exports = {
   roleValidator: validate(roleSchema),
   moduleValidator: validate(moduleSchema),
   permissionValidator: validate(permissionSchema),
-  createRoleModulePermissionValidator:validate(createRoleModulePermissionSchema),
+  // createRoleModulePermissionValidator:validate(createRoleModulePermissionSchema),
   getModulesForRoleValidator:validate(getModulesForRoleSchema),
   getModulesAndPermissionsByRoleValidator:validate(getModulesAndPermissionsByRole),
   addModulePermissionValidator:validate(rolePermissionsSchema),
