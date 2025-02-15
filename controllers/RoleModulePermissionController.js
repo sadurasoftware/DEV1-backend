@@ -22,17 +22,12 @@ const createRoleModulePermission = async (req, res) => {
         );
       }
     }
-
     
     // await transaction.commit();
-
-    
     res.status(200).json({ message: 'Role module permissions created successfully' });
-  } catch (error) {
-    
+  } catch (error)
+   {
     // await transaction.rollback();
-    
-    
     console.error('Error creating role module permissions:', error);
     res.status(500).json({ message: 'Failed to create role module permissions', error: error.message });
   }
@@ -42,54 +37,48 @@ const createRoleModulePermission = async (req, res) => {
 const getModulesForRole = async (req, res) => {
   try {
     const { roleId } = req.body;
+    logger.info(`Fetching permissions for roleId: ${roleId}`);
+
     if (!roleId) {
-      logger.warn('No role ID provided.');
-      return res.status(400).json({ message: 'roleId is required.' });
+      return res.status(400).json({ message: 'Role ID is required' });
     }
-    const role = await Role.findByPk(roleId);
-    if (!role) {
-      logger.warn('Role not found.');
-      return res.status(404).json({ message: 'Role not found.' });
-    }
-    const roleModulePermissions = await RoleModulePermission.findAll({
-      where: { roleId },
+
+    const rolePermissions = await RoleModulePermission.findAll({
+      where: { roleId: roleId },
       include: [
         {
           model: Module,
-          as: 'Module',
+          as: 'module',
           attributes: ['id', 'name'],
+        },
+        {
+          model: Permission,
+          as: 'permission',
+          attributes: ['id', 'name'], 
         },
       ],
     });
 
-    if (roleModulePermissions.length === 0) {
-      logger.warn('No modules found for this role.');
-      return res.status(404).json({ message: 'No modules found for this role.' });
+
+    if (!rolePermissions.length) {
+      return res.status(404).json({ message: 'No permissions found for the given roleId' });
     }
 
-    const uniqueModules = [];
-    const moduleMap = new Map();
+    const response = rolePermissions.map(permission => ({
+      moduleId: permission.moduleId,
+      moduleName: permission.module.name,
+      permissionId: permission.permissionId,
+      permissionName: permission.permission.name,
+    }));
 
-    for (const item of roleModulePermissions) {
-      const module = item.Module;
-      if (!moduleMap.has(module.id)) {
-        moduleMap.set(module.id, module);
-        uniqueModules.push(module.name); 
-      }
-    }
-    const response = {
-      roleId: role.id,
-      roleName: role.name,
-      modules: uniqueModules,
-    };
-    logger.info('Modules fetched successfully for this role.');
-    return res.status(200).json(response);
+    res.status(200).json({ roleId, permissions: response });
+
   } catch (error) {
-    logger.error('Error fetching modules for this role.');
-    console.error('Error fetching modules for role:', error);
-    return res.status(500).json({ message: 'An error occurred while fetching modules.' });
+    console.error('Error fetching role module permissions:', error);
+    res.status(500).json({ message: 'Failed to fetch role module permissions', error: error.message });
   }
 };
+        
 
 const getModulesAndPermissionsByRole = async (req, res) => {
   try {
