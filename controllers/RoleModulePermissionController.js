@@ -82,7 +82,8 @@ const getModulesForRole = async (req, res) => {
 
 const getModulesAndPermissionsByRole = async (req, res) => {
   try {
-    const { roleId } = req.body;
+    const { roleId } = req.query;
+    console.log('Incoming query:', req.query);
     if (!roleId) {
       logger.warn('No role ID provided.');
       return res.status(400).json({ message: 'roleId is required.' });

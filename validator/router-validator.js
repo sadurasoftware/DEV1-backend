@@ -2,25 +2,30 @@ const Joi = require('joi');
 
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
-const registerSchema = Joi.object({
-  username: Joi.string().min(3).required().messages({
-    'string.empty': 'Username is required',
-    'string.min': 'Username must be at least 3 characters long',
-  }),
-  email: Joi.string().pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/,).required().messages({
-    'string.empty': 'Email is required',
-    'string.email': 'Please provide a valid email',
-  }),
-  password: Joi.string().pattern(passwordRegex).required().messages({
-    'string.empty': 'Password is required',
-    'string.pattern.base':
-      'Password should be a combination of one uppercase, one lowercase, one special character, one digit, and be between 8 and 20 characters long',
-  }),
-  role: Joi.string().required().messages({
-    'string.empty': 'Role is required',
-    'string.base': 'Role must be a valid string',
-  }),
-});
+// const registerSchema = Joi.object({
+//   username: Joi.string().min(3).required().messages({
+//     'string.empty': 'Username is required',
+//     'string.min': 'Username must be at least 3 characters long',
+//   }),
+//   email: Joi.string().pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/,).required().messages({
+//     'string.empty': 'Email is required',
+//     'string.email': 'Please provide a valid email',
+//   }),
+//   password: Joi.string().pattern(passwordRegex).required().messages({
+//     'string.empty': 'Password is required',
+//     'string.pattern.base':
+//       'Password should be a combination of one uppercase, one lowercase, one special character, one digit, and be between 8 and 20 characters long',
+//   }),
+//   confirmPassword: Joi.string().pattern(passwordRegex).required().messages({
+//     'string.empty': 'Confirm Password is required',
+//     'string.pattern.base':
+//       'Password should be a combination of one uppercase, one lowercase, one special character, one digit, and be between 8 and 20 characters long',
+//   }),
+//   role: Joi.string().required().messages({
+//     'string.empty': 'Role is required',
+//     'string.base': 'Role must be a valid string',
+//   }),
+// });
 
 const loginSchema = Joi.object({
   email: Joi.string().pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/,).required().messages({
@@ -193,7 +198,7 @@ const validate = (schema) => (req, res, next) => {
 };
 
 module.exports = {
-  registerValidator: validate(registerSchema),
+  // registerValidator: validate(registerSchema),
   loginValidator: validate(loginSchema),
   forgetPasswordValidator: validate(forgetPasswordSchema),
   resetPasswordValidator: validate(resetPasswordSchema),
