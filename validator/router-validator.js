@@ -97,19 +97,19 @@ const permissionSchema=Joi.object({
 //   return value;
 // });;
 
-const getModulesForRoleSchema = Joi.object({
-  roleId: Joi.number().integer().required().messages({
-    'number.base': 'roleId must be a number.',
-    'any.required': 'roleId is required.',
-  }),
-});
+// const getModulesForRoleSchema = Joi.object({
+//   roleId: Joi.number().integer().required().messages({
+//     'number.base': 'roleId must be a number.',
+//     'any.required': 'roleId is required.',
+//   }),
+// });
 
-const getModulesAndPermissionsByRole  = Joi.object({
-  roleId: Joi.number().integer().required().messages({
-    'number.base': 'roleId must be a number.',
-    'any.required': 'roleId is required.',
-  }),
-});
+// const getModulesAndPermissionsByRole  = Joi.object({
+//   roleId: Joi.number().integer().required().messages({
+//     'number.base': 'roleId must be a number.',
+//     'any.required': 'roleId is required.',
+//   }),
+// });
 const addpermissionSchema = Joi.object({
   moduleId: Joi.number().integer().required(),
   permissions: Joi.array().items(
@@ -202,8 +202,8 @@ module.exports = {
   moduleValidator: validate(moduleSchema),
   permissionValidator: validate(permissionSchema),
   // createRoleModulePermissionValidator:validate(createRoleModulePermissionSchema),
-  getModulesForRoleValidator:validate(getModulesForRoleSchema),
-  getModulesAndPermissionsByRoleValidator:validate(getModulesAndPermissionsByRole),
+  // getModulesForRoleValidator:validate(getModulesForRoleSchema),
+  // getModulesAndPermissionsByRoleValidator:validate(getModulesAndPermissionsByRole),
   addModulePermissionValidator:validate(rolePermissionsSchema),
   removePermissionsSchemaValidator:validate(removePermissionsSchema),
   deleteModuleSchemaValidator:validate(deleteModuleSchema),
