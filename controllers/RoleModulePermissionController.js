@@ -36,7 +36,7 @@ const createRoleModulePermission = async (req, res) => {
 
 const getModulesForRole = async (req, res) => {
   try {
-    const { roleId } = req.body;
+    const { roleId } = req.query;
     logger.info(`Fetching permissions for roleId: ${roleId}`);
 
     if (!roleId) {
@@ -79,6 +79,42 @@ const getModulesForRole = async (req, res) => {
   }
 };
         
+
+const updateModulesForRole = async (req, res) => {
+  try {
+    const { roleId, permissions } = req.body; 
+    logger.info(`Updating permissions for roleId: ${roleId}`);
+
+    if (!roleId || !permissions || permissions.length === 0) {
+      return res.status(400).json({ message: 'Role ID and permissions are required' });
+    }
+
+    const role = await Role.findByPk(roleId);
+    if (!role) {
+      return res.status(404).json({ message: 'Role not found' });
+    }
+
+    await RoleModulePermission.destroy({
+      where: { roleId: roleId }
+    });
+
+    const rolePermissions = await Promise.all(
+      permissions.map(permission => {
+        return RoleModulePermission.create({
+          roleId: roleId,
+          moduleId: permission.moduleId,
+          permissionId: permission.permissionId,
+        });
+      })
+    );
+
+    res.status(200).json({ message: 'Role permissions updated successfully', permissions: rolePermissions });
+  } catch (error) {
+    console.error('Error updating role module permissions:', error);
+    res.status(500).json({ message: 'Failed to update role module permissions', error: error.message });
+  }
+};
+
 
 const getModulesAndPermissionsByRole = async (req, res) => {
   try {
@@ -375,6 +411,7 @@ const updateModule = async (req, res) => {
 module.exports = {
   createRoleModulePermission,
   getModulesForRole,
+  updateModulesForRole,
   getModulesAndPermissionsByRole,
   addPermissionsToRole,
   removePermissionsFromRole,
