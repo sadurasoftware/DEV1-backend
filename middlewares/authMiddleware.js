@@ -5,6 +5,7 @@ const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   // const token = req.body.token;
   const token = authHeader && authHeader.split(' ')[1]; 
+  logger.info(token);
   if (!token) {
     logger.warn('No token provided');
     return res.status(401).json({ message: 'Access denied. No token provided.' });
