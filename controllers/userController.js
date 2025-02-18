@@ -38,14 +38,14 @@ async function fetchUserData(req, res) {
 async function updateUser(req, res) {
   try {
     const {id} = req.params;  
-    const {username, email} = req.body;  
+    const {firstname, email} = req.body;  
     
     const user = await User.findByPk(id);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    user.username = username;
+    user.firstname = firstname;
     user.email = email;
     await user.save();
 

@@ -15,12 +15,19 @@ const handleError = (res, error, message) => {
 
 const register = async (req, res) => {
   try {
-    const { username, email, password,role } = req.body;
+    const { firstname, lastname, email, password, terms, role } = req.body;
+    console.log(req.body); 
+
     // if (password !== confirmPassword) {
     //   logger.warn(`Passwords do not match during registration: ${email}`);
     //   return res.status(400).json({ message: 'Passwords do not match' });
     // }
     
+    if (!terms) {
+      logger.warn(`User did not accept terms during registration: ${email}`);
+      return res.status(400).json({ message: 'You must accept the terms and conditions to register' });
+    }
+
     logger.info(`Registering user: ${email}`);
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
@@ -34,20 +41,22 @@ const register = async (req, res) => {
     }
     const hashedPassword = await bcryptHelper.hashPassword(password);
     const newUser = await User.create({
-      username,
+      firstname,
+      lastname,
       email,
       password: hashedPassword,
       isVerified: false,
       roleId: roleData.id,
+      terms,
     });
-    const tokenPayload = { id: newUser.id, email: newUser.email, username: newUser.username };
+    const tokenPayload = { id: newUser.id, email: newUser.email, firstname: newUser.firstname, lastname: newUser.lastname };
     const token = jwtHelper.generateToken(tokenPayload, process.env.JWT_SECRET, '2m');
     const verificationUrl = `${process.env.VERIFICATION_URL}/verify-email/${token}`;
-    await emailHelper.verificationEmail(email, verificationUrl, username);
+    await emailHelper.verificationEmail(email, verificationUrl, firstname);
     logger.info(`User registered successfully: ${email}`);
     return res.status(201).json({
       message: 'User created successfully. Please verify your email.',
-      user: { id: newUser.id, username: newUser.username, email: newUser.email, token },
+      user: { id: newUser.id, firstname: newUser.firstname, email: newUser.email, token },
     });
   } catch (error) {
     return handleError(res, error, 'Registration error');
@@ -69,7 +78,7 @@ const resendVerificationEmail = async (req, res) => {
     }
     const token = jwtHelper.generateToken({ email }, process.env.JWT_SECRET, '2m');
     const verificationUrl = `${process.env.VERIFICATION_URL}/verify-email/${token}`;
-    await emailHelper.verificationEmail(email, verificationUrl, user.username);
+    await emailHelper.verificationEmail(email, verificationUrl, user.firstname);
     logger.info(`Verification email resent successfully: ${email}`);
     return res.status(200).json({ message: 'Verification email sent successfully' });
   } catch (error) {
@@ -219,7 +228,7 @@ const forgetPassword = async (req, res) => {
     }
     const token = jwtHelper.generateToken({ email }, process.env.JWT_SECRET, '1h');
     const url = `${process.env.FORGET_PASSWORD_URL}?token=${token}`;
-    await emailHelper.forgotPasswordEmail(user.email, url, user.username);
+    await emailHelper.forgotPasswordEmail(user.email, url, user.firstname);
     logger.info(`Password reset link sent successfully to: ${email}`);
     return res.status(200).json({ message: 'Password reset link sent successfully' });
   } catch (error) {
