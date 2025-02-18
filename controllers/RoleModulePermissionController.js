@@ -6,12 +6,12 @@ const sequelize = require('sequelize');
 const createRoleModulePermission = async (req, res) => {
   // const transaction = await sequelize.transaction();
   try {
-    const { roleId, modulePermissions } = req.body;
+    const { roleId, roleModules } = req.body;
     // console.log(req.body);  
     logger.info(req.body);
-    for (const module of modulePermissions) {
+    for (const module of roleModules) {
       
-      for (const permission of module.permissions) {
+      for (const permission of module.Permissions) {
         await RoleModulePermission.create(
           {
             roleId: roleId,  
@@ -79,36 +79,46 @@ const getModulesForRole = async (req, res) => {
   }
 };
         
-
+// Update role module permission
 const updateModulesForRole = async (req, res) => {
   try {
-    const { roleId, permissions } = req.body; 
+    const { roleId, roleModules } = req.body; 
     logger.info(`Updating permissions for roleId: ${roleId}`);
 
-    if (!roleId || !permissions || permissions.length === 0) {
-      return res.status(400).json({ message: 'Role ID and permissions are required' });
+    if (!roleId || !roleModules || roleModules.length === 0) {
+      return res.status(400).json({ message: 'Role ID and roleModules are required' });
     }
 
-    const role = await Role.findByPk(roleId);
+    const role = await Role.findByPk(roleId); 
     if (!role) {
       return res.status(404).json({ message: 'Role not found' });
     }
 
+   
     await RoleModulePermission.destroy({
       where: { roleId: roleId }
     });
 
+    
     const rolePermissions = await Promise.all(
-      permissions.map(permission => {
-        return RoleModulePermission.create({
-          roleId: roleId,
-          moduleId: permission.moduleId,
-          permissionId: permission.permissionId,
-        });
+      roleModules.map(module => {
+        return Promise.all(
+          module.Permissions.map(permission => {
+            return RoleModulePermission.create({
+              roleId: roleId,
+              moduleId: module.moduleId,
+              permissionId: permission.permissionId,
+            });
+          })
+        );
       })
     );
 
-    res.status(200).json({ message: 'Role permissions updated successfully', permissions: rolePermissions });
+    res.status(200).json({
+      message: 'Role permissions updated successfully',
+      rolePermissions: rolePermissions.flat(), 
+    });
+
   } catch (error) {
     console.error('Error updating role module permissions:', error);
     res.status(500).json({ message: 'Failed to update role module permissions', error: error.message });
