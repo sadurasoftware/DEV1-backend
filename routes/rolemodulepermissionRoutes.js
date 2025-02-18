@@ -4,7 +4,7 @@ const {authenticateToken}=require('../middlewares/authMiddleware');
 const {checkRole}=require('../middlewares/checkRole');
 const validator=require('../validator/router-validator');
 const router=express.Router();
-
+   
 router.post('/create',authenticateToken,checkRole('superadmin'),RoleModulePermissionController.createRoleModulePermission);
 router.post('/rolemodules',authenticateToken,checkRole('superadmin'),RoleModulePermissionController.getModulesForRole);
 router.get('/modulespermissionsByRole',authenticateToken,checkRole('superadmin'),RoleModulePermissionController.getModulesAndPermissionsByRole);
