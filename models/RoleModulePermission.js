@@ -19,6 +19,11 @@ const RoleModulePermission = sequelize.define('RoleModulePermission', {
     type: DataTypes.INTEGER,  
     allowNull: false,
   },
+  status: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false, 
+  },
 });
 
 
