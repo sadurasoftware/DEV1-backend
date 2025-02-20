@@ -1,131 +1,98 @@
 const { RoleModulePermission, Role, Module, Permission } = require('../models');
-const { Op } = require('sequelize');
 const logger = require('../config/logger');
-const sequelize = require('sequelize');
 
 const createRoleModulePermission = async (req, res) => {
-  // const transaction = await sequelize.transaction();
   try {
-    const { roleId, roleModules } = req.body;
-    // console.log(req.body);  
-    logger.info(req.body);
-    for (const module of roleModules) {
-      
-      for (const permission of module.Permissions) {
-        await RoleModulePermission.create(
-          {
-            roleId: roleId,  
-            moduleId: module.moduleId,  
-            permissionId: permission.permissionId, 
-          },
-          // { transaction }  
-        );
+    const { roleId, moduleId, permissionId, status } = req.body;
+
+    if (!roleId || !moduleId || !permissionId || typeof status !== "boolean") {
+      return res.status(400).json({ message: "Invalid input format." });
+    }
+    const [role, module, permission] = await Promise.all([
+      Role.findByPk(roleId),
+      Module.findByPk(moduleId),
+      Permission.findByPk(permissionId),
+    ]);
+
+    if (!role || !module || !permission) {
+      return res.status(404).json({ message: "Role, Module, or Permission not found." });
+    }
+    const existingPermission = await RoleModulePermission.findOne({
+      where: { roleId, moduleId, permissionId },
+    });
+
+    if (status) {
+      if (existingPermission) {
+        await existingPermission.update({ status: true });
+        return res.status(200).json({ message: "Permission status updated to true." });
+      } else {
+        await RoleModulePermission.create({ roleId, moduleId, permissionId, status: true });
+        return res.status(201).json({ message: "Permission added successfully." });
+      }
+    } else {
+      if (existingPermission) {
+        await existingPermission.update({ status: false });
+        return res.status(200).json({ message: "Permission status updated to false." });
+      } else {
+        return res.status(404).json({ message: "Permission not found to update." });
       }
     }
-    
-    // await transaction.commit();
-    res.status(200).json({ message: 'Role module permissions created successfully' });
-  } catch (error)
-   {
-    // await transaction.rollback();
-    console.error('Error creating role module permissions:', error);
-    res.status(500).json({ message: 'Failed to create role module permissions', error: error.message });
+  } catch (error) {
+    console.error("Error toggling RoleModulePermission:", error);
+    return res.status(500).json({ message: "An error occurred.", error: error.message });
   }
 };
-
 
 const getModulesForRole = async (req, res) => {
   try {
     const { roleId } = req.query;
-    logger.info(`Fetching permissions for roleId: ${roleId}`);
-
     if (!roleId) {
-      return res.status(400).json({ message: 'Role ID is required' });
+      logger.warn('No role ID provided.');
+      return res.status(400).json({ message: 'roleId is required.' });
     }
-
-    const rolePermissions = await RoleModulePermission.findAll({
-      where: { roleId: roleId },
+    const role = await Role.findByPk(roleId);
+    if (!role) {
+      logger.warn('Role not found.');
+      return res.status(404).json({ message: 'Role not found.' });
+    }
+    const roleModulePermissions = await RoleModulePermission.findAll({
+      where: { roleId },
       include: [
         {
           model: Module,
-          as: 'module',
+          as: 'Module',
           attributes: ['id', 'name'],
-        },
-        {
-          model: Permission,
-          as: 'permission',
-          attributes: ['id', 'name'], 
         },
       ],
     });
 
-
-    if (!rolePermissions.length) {
-      return res.status(404).json({ message: 'No permissions found for the given roleId' });
+    if (roleModulePermissions.length === 0) {
+      logger.warn('No modules found for this role.');
+      return res.status(404).json({ message: 'No modules found for this role.' });
     }
+    const uniqueModules = [];
+    const moduleMap = new Map();
 
-    const response = rolePermissions.map(permission => ({
-      moduleId: permission.moduleId,
-      moduleName: permission.module.name,
-      permissionId: permission.permissionId,
-      permissionName: permission.permission.name,
-    }));
-
-    res.status(200).json({ roleId, permissions: response });
-
+    for (const item of roleModulePermissions) {
+      const module = item.Module;
+      if (!moduleMap.has(module.id)) {
+        moduleMap.set(module.id, module);
+        uniqueModules.push(module.id); 
+      }
+    }
+    const response = {
+      roleId: role.id,
+      roleName: role.name,
+      modules: uniqueModules,
+    };
+    logger.info('Modules fetched successfully for this role.');
+    return res.status(200).json(response);
   } catch (error) {
-    console.error('Error fetching role module permissions:', error);
-    res.status(500).json({ message: 'Failed to fetch role module permissions', error: error.message });
+    logger.error('Error fetching modules for this role.');
+    console.error('Error fetching modules for role:', error);
+    return res.status(500).json({ message: 'An error occurred while fetching modules.' });
   }
-};
-        
-// Update role module permission
-const updateModulesForRole = async (req, res) => {
-  try {
-    const { roleId, roleModules } = req.body; 
-    logger.info(`Updating permissions for roleId: ${roleId}`);
-
-    if (!roleId || !roleModules || roleModules.length === 0) {
-      return res.status(400).json({ message: 'Role ID and roleModules are required' });
-    }
-
-    const role = await Role.findByPk(roleId); 
-    if (!role) {
-      return res.status(404).json({ message: 'Role not found' });
-    }
-
-   
-    await RoleModulePermission.destroy({
-      where: { roleId: roleId }
-    });
-
-    
-    const rolePermissions = await Promise.all(
-      roleModules.map(module => {
-        return Promise.all(
-          module.Permissions.map(permission => {
-            return RoleModulePermission.create({
-              roleId: roleId,
-              moduleId: module.moduleId,
-              permissionId: permission.permissionId,
-            });
-          })
-        );
-      })
-    );
-
-    res.status(200).json({
-      message: 'Role permissions updated successfully',
-      rolePermissions: rolePermissions.flat(), 
-    });
-
-  } catch (error) {
-    console.error('Error updating role module permissions:', error);
-    res.status(500).json({ message: 'Failed to update role module permissions', error: error.message });
-  }
-};
-
-
+}; 
 const getModulesAndPermissionsByRole = async (req, res) => {
   try {
     const { roleId } = req.query;
@@ -186,116 +153,6 @@ const getModulesAndPermissionsByRole = async (req, res) => {
     logger.error('Error fetching modules and permissions for this role.');
     console.error('Error occurred while fetching modules and permissions for roleId:', error);
     return res.status(500).json({ message: 'An error occurred while fetching modules and permissions.' });
-  }
-};
-
-const addPermissionsToRole = async (req, res) => {
-  const { roleId, modulePermissions } = req.body;
-  if (!roleId || !Array.isArray(modulePermissions)) {
-    return res.status(400).json({ message: "roleId and modulePermissions are required." });
-  }
-  const transaction = await RoleModulePermission.sequelize.transaction();
-
-  try {
-    const role = await Role.findByPk(roleId);
-    if (!role) {
-      await transaction.rollback();
-      return res.status(404).json({ message: "Role not found." });
-    }
-    const permissionsToCreate = [];
-    for (const { moduleId, permissions } of modulePermissions) {
-      const module = await Module.findByPk(moduleId);
-      if (!module) {
-        await transaction.rollback();
-        return res.status(404).json({ message: `Module with ID ${moduleId} not found.` });
-      }
-      const permissionIds = permissions.map(p => p.permissionId);
-      const foundPermissions = await Permission.findAll({
-        where: { id: permissionIds }
-      });
-      const missingPermissions = permissionIds.filter(id => !foundPermissions.some(p => p.id === id));
-      if (missingPermissions.length > 0) {
-        logger.warn(`Some permissions not found: ${missingPermissions}`);
-        await transaction.rollback();
-        return res.status(404).json({ message: "Some permissions not found.", missingPermissions });
-      }
-      const existingPermissions = await RoleModulePermission.findAll({
-        where: {
-          roleId,
-          moduleId,
-          permissionId: permissionIds
-        },
-        transaction
-      });
-      const existingSet = new Set(existingPermissions.map(perm => `${perm.moduleId}-${perm.permissionId}`));
-      permissions.forEach(({ permissionId }) => {
-        if (!existingSet.has(`${moduleId}-${permissionId}`)) {
-          permissionsToCreate.push({ roleId, moduleId, permissionId });
-        }
-      });
-    }
-    if (permissionsToCreate.length === 0) {
-      await transaction.rollback();
-      logger.warn("All permissions already exist for the provided role and modules.");
-      return res.status(409).json({ message: "All permissions already exist for the provided role and modules." });
-    }
-    logger.info("Adding permissions to the role...");
-    await RoleModulePermission.bulkCreate(permissionsToCreate, { transaction });
-    await transaction.commit();
-    return res.status(201).json({ message: "Permissions added successfully." });
-  } catch (error) {
-    logger.error("Error adding permissions:", error);
-    await transaction.rollback();
-    console.error("Error adding permissions:", error);
-    return res.status(500).json({ message: "An error occurred." });
-  }
-};
-
-const removePermissionsFromRole = async (req, res) => {
-  const { roleId, modulePermissions } = req.body;
-
-  if (!roleId || !Array.isArray(modulePermissions)) {
-    return res.status(400).json({ message: "roleId and modulePermissions are required." });
-  }
-  const transaction = await RoleModulePermission.sequelize.transaction();
-  try {
-    const role = await Role.findByPk(roleId);
-    if (!role) {
-      await transaction.rollback();
-      return res.status(404).json({ message: "Role not found." });
-    }
-    for (const { moduleId, permissions } of modulePermissions) {
-      const module = await Module.findByPk(moduleId);
-      if (!module) {
-        await transaction.rollback();
-        return res.status(404).json({ message: `Module with ID ${moduleId} not found.` });
-      }
-      const permissionIds = permissions.map(p => p.permissionId);
-      const existingPermissions = await RoleModulePermission.findAll({
-        where: { roleId, moduleId, permissionId: permissionIds },
-        transaction
-      });
-
-      if (existingPermissions.length === 0) {
-        await transaction.rollback();
-        return res.status(404).json({ message: "No permissions found to remove." });
-      }
-      await RoleModulePermission.destroy({
-        where: {
-          roleId,
-          moduleId,
-          permissionId: permissionIds
-        },
-        transaction
-      });
-    }
-    logger.info("Permissions removed successfully.")
-    await transaction.commit();
-    return res.status(200).json({ message: "Permissions removed successfully." });
-  } catch (error) {
-    await transaction.rollback();
-    console.error("Error removing permissions:", error);
-    return res.status(500).json({ message: "An error occurred." });
   }
 };
 
@@ -422,10 +279,7 @@ const updateModule = async (req, res) => {
 module.exports = {
   createRoleModulePermission,
   getModulesForRole,
-  updateModulesForRole,
   getModulesAndPermissionsByRole,
-  addPermissionsToRole,
-  removePermissionsFromRole,
   deleteModule,
   deletePermission,
   updatePermission,

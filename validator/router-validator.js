@@ -2,30 +2,38 @@ const Joi = require('joi');
 
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
-// const registerSchema = Joi.object({
-//   username: Joi.string().min(3).required().messages({
-//     'string.empty': 'Username is required',
-//     'string.min': 'Username must be at least 3 characters long',
-//   }),
-//   email: Joi.string().pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/,).required().messages({
-//     'string.empty': 'Email is required',
-//     'string.email': 'Please provide a valid email',
-//   }),
-//   password: Joi.string().pattern(passwordRegex).required().messages({
-//     'string.empty': 'Password is required',
-//     'string.pattern.base':
-//       'Password should be a combination of one uppercase, one lowercase, one special character, one digit, and be between 8 and 20 characters long',
-//   }),
-//   confirmPassword: Joi.string().pattern(passwordRegex).required().messages({
-//     'string.empty': 'Confirm Password is required',
-//     'string.pattern.base':
-//       'Password should be a combination of one uppercase, one lowercase, one special character, one digit, and be between 8 and 20 characters long',
-//   }),
-//   role: Joi.string().required().messages({
-//     'string.empty': 'Role is required',
-//     'string.base': 'Role must be a valid string',
-//   }),
-// });
+const registerSchema = Joi.object({
+  firstname: Joi.string().min(3).required().messages({
+    'string.empty': 'Firstname is required',
+    'string.min': 'Username must be at least 3 characters long',
+  }),
+  lastname: Joi.string().min(3).required().messages({
+    'string.empty': 'Lastname is required',
+    'string.min': 'Lastname must be at least 3 characters long',
+  }),
+  email: Joi.string().pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/,).required().messages({
+    'string.empty': 'Email is required',
+    'string.email': 'Please provide a valid email',
+  }),
+  password: Joi.string().pattern(passwordRegex).required().messages({
+    'string.empty': 'Password is required',
+    'string.pattern.base':
+      'Password should be a combination of one uppercase, one lowercase, one special character, one digit, and be between 8 and 20 characters long',
+  }),
+  // confirmPassword: Joi.string().pattern(passwordRegex).required().messages({
+  //   'string.empty': 'Confirm Password is required',
+  //   'string.pattern.base':
+  //     'Password should be a combination of one uppercase, one lowercase, one special character, one digit, and be between 8 and 20 characters long',
+  // }),
+  role: Joi.string().required().messages({
+    'string.empty': 'Role is required',
+    'string.base': 'Role must be a valid string',
+  }),
+  terms : Joi.boolean().required().messages({
+    'string.empty': 'Terms is required',
+    'string.base': 'Terms must be a valid string',
+  })
+});
 
 const loginSchema = Joi.object({
   email: Joi.string().pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/,).required().messages({
@@ -91,57 +99,39 @@ const permissionSchema=Joi.object({
   }),
 });
 
-// const createRoleModulePermissionSchema = Joi.object({
-//   roleId: Joi.number().integer().required(),
-//   moduleId: Joi.array().items(Joi.number().integer().required()).required(),
-//   permissionId: Joi.array().items(Joi.number().integer().required()).required(),
-// }).custom((value, helpers) => {
-//   if (value.moduleId.length !== value.permissionId.length) {
-//     return helpers.message('moduleId and permissionId arrays must have the same length');
-//   }
-//   return value;
-// });;
-
-// const getModulesForRoleSchema = Joi.object({
-//   roleId: Joi.number().integer().required().messages({
-//     'number.base': 'roleId must be a number.',
-//     'any.required': 'roleId is required.',
-//   }),
-// });
-
-// const getModulesAndPermissionsByRole  = Joi.object({
-//   roleId: Joi.number().integer().required().messages({
-//     'number.base': 'roleId must be a number.',
-//     'any.required': 'roleId is required.',
-//   }),
-// });
-const addpermissionSchema = Joi.object({
-  moduleId: Joi.number().integer().required(),
-  permissions: Joi.array().items(
-    Joi.object({
-      permissionId: Joi.number().integer().required(),
-    }).required()
-  ).required(),
+const createRoleModulePermissionSchema = Joi.object({
+  roleId: Joi.number().integer().required().messages({
+    "number.base": "roleId must be a number.",
+    "number.integer": "roleId must be an integer.",
+    "any.required": "roleId is required.",
+  }),
+  moduleId: Joi.number().integer().required().messages({
+    "number.base": "moduleId must be a number.",
+    "number.integer": "moduleId must be an integer.",
+    "any.required": "moduleId is required.",
+  }),
+  permissionId: Joi.number().integer().required().messages({
+    "number.base": "permissionId must be a number.",
+    "number.integer": "permissionId must be an integer.",
+    "any.required": "permissionId is required.",
+  }),
+  status: Joi.boolean().required().messages({
+    "boolean.base": "status must be a boolean.",
+    "any.required": "status is required.",
+  }),
 });
 
-const rolePermissionsSchema = Joi.object({
-  roleId: Joi.number().integer().required(),
-  modulePermissions: Joi.array().items(addpermissionSchema).required(),
-});
-const removePermissionsSchema = Joi.object({
+const getModulesForRoleSchema = Joi.object({
   roleId: Joi.number().integer().required().messages({
     'number.base': 'roleId must be a number.',
     'any.required': 'roleId is required.',
   }),
-  moduleId: Joi.array().items(Joi.number().integer()).required().messages({
-    'array.base': 'moduleId must be an array.',
-    'any.required': 'moduleId is required.',
-    'array.includes': 'moduleId must contain only numbers.',
-  }),
-  permissionId: Joi.array().items(Joi.number().integer()).required().messages({
-    'array.base': 'permissionId must be an array.',
-    'any.required': 'permissionId is required.',
-    'array.includes': 'permissionId must contain only numbers.',
+});
+
+const getModulesAndPermissionsByRole  = Joi.object({
+  roleId: Joi.number().integer().required().messages({
+    'number.base': 'roleId must be a number.',
+    'any.required': 'roleId is required.',
   }),
 });
 
@@ -198,7 +188,7 @@ const validate = (schema) => (req, res, next) => {
 };
 
 module.exports = {
-  // registerValidator: validate(registerSchema),
+  registerValidator: validate(registerSchema),
   loginValidator: validate(loginSchema),
   forgetPasswordValidator: validate(forgetPasswordSchema),
   resetPasswordValidator: validate(resetPasswordSchema),
@@ -206,11 +196,9 @@ module.exports = {
   roleValidator: validate(roleSchema),
   moduleValidator: validate(moduleSchema),
   permissionValidator: validate(permissionSchema),
-  // createRoleModulePermissionValidator:validate(createRoleModulePermissionSchema),
-  // getModulesForRoleValidator:validate(getModulesForRoleSchema),
-  // getModulesAndPermissionsByRoleValidator:validate(getModulesAndPermissionsByRole),
-  addModulePermissionValidator:validate(rolePermissionsSchema),
-  removePermissionsSchemaValidator:validate(removePermissionsSchema),
+  createRoleModulePermissionValidator: validate(createRoleModulePermissionSchema),
+  getModulesForRoleValidator:validate(getModulesForRoleSchema),
+  getModulesAndPermissionsByRoleValidator:validate(getModulesAndPermissionsByRole),
   deleteModuleSchemaValidator:validate(deleteModuleSchema),
   deletePermissionSchemaValidator:validate(deletePermissionSchema),
   updatePermissionSchemaValidator:validate(updatePermissionSchema),
