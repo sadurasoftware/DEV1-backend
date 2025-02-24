@@ -186,6 +186,13 @@ const validate = (schema) => (req, res, next) => {
   }
   next();
 };
+const validateQuery = (schema) => (req, res, next) => {
+  const { error } = schema.validate(req.query, { abortEarly: false });
+  if (error) {
+    return res.status(400).json({ errors: error.details.map((err) => err.message) });
+  }
+  next();
+};
 
 module.exports = {
   registerValidator: validate(registerSchema),
@@ -197,8 +204,8 @@ module.exports = {
   moduleValidator: validate(moduleSchema),
   permissionValidator: validate(permissionSchema),
   createRoleModulePermissionValidator: validate(createRoleModulePermissionSchema),
-  getModulesForRoleValidator:validate(getModulesForRoleSchema),
-  getModulesAndPermissionsByRoleValidator:validate(getModulesAndPermissionsByRole),
+  getModulesForRoleValidator:validateQuery(getModulesForRoleSchema),
+  getModulesAndPermissionsByRoleValidator:validateQuery(getModulesAndPermissionsByRole),
   deleteModuleSchemaValidator:validate(deleteModuleSchema),
   deletePermissionSchemaValidator:validate(deletePermissionSchema),
   updatePermissionSchemaValidator:validate(updatePermissionSchema),
