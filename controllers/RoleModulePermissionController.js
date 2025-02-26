@@ -137,16 +137,27 @@ const getModulesAndPermissionsByRole = async (req, res) => {
       const permission = item.Permission; 
       const existingModule = response.roleModules.find(m => m.moduleId === module.id);
 
-      if (existingModule) {
-        existingModule.Permissions.push(permission.id);
+       if (existingModule) {
+        existingModule.permissions.push({
+          permissionId: permission.id,
+          permissionName: permission.name,
+          status: item.status, 
+        });
       } else {
         response.roleModules.push({
           moduleId: module.id,
           moduleName: module.name,
-          Permissions: [permission.id], 
+          permissions: [
+            {
+              permissionId: permission.id,
+              permissionName: permission.name,
+              status: item.status,
+            },
+          ],
         });
       }
     });
+
     logger.info('Modules and permissions fetched successfully for this role.');
     return res.status(200).json(response);
   } catch (error) {

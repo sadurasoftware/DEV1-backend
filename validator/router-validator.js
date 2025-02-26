@@ -80,8 +80,32 @@ const roleSchema=Joi.object({
     'string.empty': 'Role name is required',
     'string.min': 'Role name must be at least 3 characters long',
     'string.max': 'Role name must not exceed 50 characters',
-  })
-})
+  }),
+});
+
+const getRollByIdsSchema=Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "id must be a number.",
+    "number.integer": "id must be an integer.",
+    "any.required": "id is required.",
+  }),
+});
+
+const updateRoleSchema=Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "id must be a number.",
+    "number.integer": "id must be an integer.",
+    "any.required": "id is required.",
+  }),
+});
+
+const deleteRoleSchema=Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "id must be a number.",
+    "number.integer": "id must be an integer.",
+    "any.required": "id is required.",
+  }),
+});
 
 const moduleSchema = Joi.object({
   name: Joi.string().min(3).max(50).required().messages({
@@ -91,11 +115,59 @@ const moduleSchema = Joi.object({
   }),
 });
 
+
+const getModuleByIdSchema=Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "id must be a number.",
+    "number.integer": "id must be an integer.",
+    "any.required": "id is required.",
+  }),
+});
+const updateModuleByIdSchema=Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "id must be a number.",
+    "number.integer": "id must be an integer.",
+    "any.required": "id is required.",
+  }),
+});
+
+const deleteModuleByIdSchema=Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "id must be a number.",
+    "number.integer": "id must be an integer.",
+    "any.required": "id is required.",
+  }),
+});
+
 const permissionSchema=Joi.object({
   name: Joi.string().min(3).max(50).required().messages({
     'string.empty': 'Permission name is required',
     'string.min': 'Permission name must be at least 3 characters long',
     'string.max': 'Permission name must not exceed 50 characters',
+  }),
+});
+
+const getPermissionByIdSchema=Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "id must be a number.",
+    "number.integer": "id must be an integer.",
+    "any.required": "id is required.",
+  }),
+});
+
+const updatePermissionByIdSchema=Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "id must be a number.",
+    "number.integer": "id must be an integer.",
+    "any.required": "id is required.",
+  }),
+});
+
+const deletePermissionByIdSchema=Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "id must be a number.",
+    "number.integer": "id must be an integer.",
+    "any.required": "id is required.",
   }),
 });
 
@@ -194,15 +266,36 @@ const validateQuery = (schema) => (req, res, next) => {
   next();
 };
 
+const validateParams= (schema) => (req, res, next) => {
+  const { error } = schema.validate(req.params, { abortEarly: false });
+  if (error) {
+    return res.status(400).json({ errors: error.details.map((err) => err.message) });
+  }
+  next();
+};
+
 module.exports = {
   registerValidator: validate(registerSchema),
   loginValidator: validate(loginSchema),
   forgetPasswordValidator: validate(forgetPasswordSchema),
   resetPasswordValidator: validate(resetPasswordSchema),
   changePasswordValidator: validate(changePasswordSchema),
+
   roleValidator: validate(roleSchema),
+  getRoleByIdvalidator: validateParams(getRollByIdsSchema),
+  updateRoleValidator: validateParams(updateRoleSchema),
+  deleteRoleValidator: validateParams(deleteRoleSchema),
+
   moduleValidator: validate(moduleSchema),
+  getModulesValidator: validateParams(getModuleByIdSchema),
+  updateModuleValidator :validateParams(updateModuleByIdSchema),
+  deleteModulevalidator: validateParams(deleteModuleByIdSchema),
+
   permissionValidator: validate(permissionSchema),
+  getPermissionValidator: validateParams(getPermissionByIdSchema),
+  updatePermissionValidator: validateParams(updatePermissionByIdSchema),
+  deletePermissionValidator: validateParams(deletePermissionByIdSchema),
+
   createRoleModulePermissionValidator: validate(createRoleModulePermissionSchema),
   getModulesForRoleValidator:validateQuery(getModulesForRoleSchema),
   getModulesAndPermissionsByRoleValidator:validateQuery(getModulesAndPermissionsByRole),
