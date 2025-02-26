@@ -91,19 +91,12 @@ const getRollByIdsSchema=Joi.object({
   }),
 });
 
-const updateRoleSchema=Joi.object({
-  id: Joi.number().integer().required().messages({
-    "number.base": "id must be a number.",
-    "number.integer": "id must be an integer.",
-    "any.required": "id is required.",
-  }),
-});
 
 const deleteRoleSchema=Joi.object({
-  id: Joi.number().integer().required().messages({
-    "number.base": "id must be a number.",
-    "number.integer": "id must be an integer.",
-    "any.required": "id is required.",
+  roleId: Joi.number().integer().required().messages({
+    "number.base": "roleId must be a number.",
+    "number.integer": "roleId must be an integer.",
+    "any.required": "roleId is required.",
   }),
 });
 
@@ -115,7 +108,6 @@ const moduleSchema = Joi.object({
   }),
 });
 
-
 const getModuleByIdSchema=Joi.object({
   id: Joi.number().integer().required().messages({
     "number.base": "id must be a number.",
@@ -123,21 +115,7 @@ const getModuleByIdSchema=Joi.object({
     "any.required": "id is required.",
   }),
 });
-const updateModuleByIdSchema=Joi.object({
-  id: Joi.number().integer().required().messages({
-    "number.base": "id must be a number.",
-    "number.integer": "id must be an integer.",
-    "any.required": "id is required.",
-  }),
-});
-
-const deleteModuleByIdSchema=Joi.object({
-  id: Joi.number().integer().required().messages({
-    "number.base": "id must be a number.",
-    "number.integer": "id must be an integer.",
-    "any.required": "id is required.",
-  }),
-});
+;
 
 const permissionSchema=Joi.object({
   name: Joi.string().min(3).max(50).required().messages({
@@ -148,22 +126,6 @@ const permissionSchema=Joi.object({
 });
 
 const getPermissionByIdSchema=Joi.object({
-  id: Joi.number().integer().required().messages({
-    "number.base": "id must be a number.",
-    "number.integer": "id must be an integer.",
-    "any.required": "id is required.",
-  }),
-});
-
-const updatePermissionByIdSchema=Joi.object({
-  id: Joi.number().integer().required().messages({
-    "number.base": "id must be a number.",
-    "number.integer": "id must be an integer.",
-    "any.required": "id is required.",
-  }),
-});
-
-const deletePermissionByIdSchema=Joi.object({
   id: Joi.number().integer().required().messages({
     "number.base": "id must be a number.",
     "number.integer": "id must be an integer.",
@@ -283,24 +245,19 @@ module.exports = {
 
   roleValidator: validate(roleSchema),
   getRoleByIdvalidator: validateParams(getRollByIdsSchema),
-  updateRoleValidator: validateParams(updateRoleSchema),
-  deleteRoleValidator: validateParams(deleteRoleSchema),
-
+ 
   moduleValidator: validate(moduleSchema),
   getModulesValidator: validateParams(getModuleByIdSchema),
-  updateModuleValidator :validateParams(updateModuleByIdSchema),
-  deleteModulevalidator: validateParams(deleteModuleByIdSchema),
-
+ 
   permissionValidator: validate(permissionSchema),
   getPermissionValidator: validateParams(getPermissionByIdSchema),
-  updatePermissionValidator: validateParams(updatePermissionByIdSchema),
-  deletePermissionValidator: validateParams(deletePermissionByIdSchema),
-
+  
   createRoleModulePermissionValidator: validate(createRoleModulePermissionSchema),
   getModulesForRoleValidator:validateQuery(getModulesForRoleSchema),
   getModulesAndPermissionsByRoleValidator:validateQuery(getModulesAndPermissionsByRole),
-  deleteModuleSchemaValidator:validate(deleteModuleSchema),
-  deletePermissionSchemaValidator:validate(deletePermissionSchema),
+  deleteModuleSchemaValidator:validateQuery(deleteModuleSchema),
+  deletePermissionSchemaValidator:validateQuery(deletePermissionSchema),
   updatePermissionSchemaValidator:validate(updatePermissionSchema),
   updateModuleSchemaValidator:validate(updateModuleSchema),
+  deleteRoleValidator: validateQuery(deleteRoleSchema),
 };

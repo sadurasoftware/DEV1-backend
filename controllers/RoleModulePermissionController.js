@@ -169,7 +169,7 @@ const getModulesAndPermissionsByRole = async (req, res) => {
 
 const deleteModule = async (req, res) => {
   try {
-    const { moduleId, moduleName } = req.body; 
+    const { moduleId, moduleName } = req.query; 
     if (!moduleId && !moduleName) {
       logger.warn('Either moduleId or moduleName is required.');
       return res.status(400).json({ message: 'Either moduleId or moduleName is required.' });
@@ -195,7 +195,7 @@ const deleteModule = async (req, res) => {
 };
 const deletePermission = async (req, res) => {
   try {
-    const { permissionId, permissionName } = req.body;
+    const { permissionId, permissionName } = req.query;
     if (!permissionId && !permissionName) {
       logger.warn('Either permissionId or permissionName is required.');
       return res.status(400).json({ message: 'Either permissionId or permissionName is required.' });
@@ -287,6 +287,26 @@ const updateModule = async (req, res) => {
   }
 };
 
+const deleteRole = async (req, res) => {
+  try {
+    const { roleId } = req.query;
+    if (!roleId) {
+      return res.status(400).json({ message: 'Role ID is required.' });
+    }
+    const role = await Role.findByPk(roleId);
+    if (!role) {
+      return res.status(404).json({ message: 'Role not found.' });
+    }
+    await RoleModulePermission.destroy({ where: { roleId } });
+    await role.destroy();
+    return res.status(200).json({ message: 'Role and its related permissions deleted successfully.' });
+  } catch (error) {
+    console.error('Error occurred while deleting role:', error);
+    return res.status(500).json({ message: 'An error occurred while deleting the role.' });
+  }
+};
+
+
 module.exports = {
   createRoleModulePermission,
   getModulesForRole,
@@ -294,7 +314,8 @@ module.exports = {
   deleteModule,
   deletePermission,
   updatePermission,
-  updateModule
+  updateModule,
+  deleteRole
 };
 
 

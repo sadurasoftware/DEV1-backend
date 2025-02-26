@@ -8,7 +8,5 @@ const {checkRole}=require('../middlewares/checkRole')
 router.post('/create',authenticateToken,checkRole('superadmin'),validator.roleValidator,roleController.createRole);
 router.get('/get',authenticateToken,checkRole('superadmin'),roleController.getAllRoles);
 router.get('/get/:id',authenticateToken,checkRole('superadmin'),validator.getRoleByIdvalidator,roleController.getRollById);
-router.put('/update/:id',authenticateToken,checkRole('superadmin'),validator.updateRoleValidator,roleController.updateRole);
-router.delete('/delete/:id',authenticateToken,checkRole('superadmin'),validator.deleteRoleValidator,roleController.deleteRole);
 
 module.exports=router;
