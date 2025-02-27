@@ -290,7 +290,7 @@ const updateModule = async (req, res) => {
 
 const deleteRole = async (req, res) => {
   try {
-    const { roleId } = req.query;
+    const { roleId } = req.params;
     if (!roleId) {
       return res.status(400).json({ message: 'Role ID is required.' });
     }

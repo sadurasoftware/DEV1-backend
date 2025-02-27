@@ -8,5 +8,6 @@ const {checkRole}=require('../middlewares/checkRole')
 router.post('/create',authenticateToken,checkRole('superadmin'),validator.roleValidator,roleController.createRole);
 router.get('/get',authenticateToken,checkRole('superadmin'),roleController.getAllRoles);
 router.get('/get/:id',authenticateToken,checkRole('superadmin'),validator.getRoleByIdvalidator,roleController.getRollById);
+router.put('/update/:id',authenticateToken,checkRole('superadmin'), roleController.updateRole);
 
 module.exports=router;

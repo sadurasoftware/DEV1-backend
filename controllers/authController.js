@@ -76,7 +76,7 @@ const resendVerificationEmail = async (req, res) => {
       logger.info(`User already verified: ${email}`);
       return res.status(400).json({ error: 'User is already verified' });
     }
-    const token = jwtHelper.generateToken({ email }, process.env.JWT_SECRET, '15m');
+    const token = jwtHelper.generateToken({ email }, process.env.JWT_SECRET, '2m');
     const verificationUrl = `${process.env.VERIFICATION_URL}/verify-email/${token}`;
     await emailHelper.verificationEmail(email, verificationUrl, user.firstname);
     logger.info(`Verification email resent successfully: ${email}`);
@@ -211,7 +211,7 @@ const verifyEmail = async (req, res) => {
     
     return handleError(res, error, 'Verify email error');
   }
-};
+};  
 
 const forgetPassword = async (req, res) => {
   const { email } = req.body;
