@@ -173,10 +173,10 @@ const deleteModuleSchema = Joi.object({
   moduleId: Joi.number().integer().optional().messages({
     'number.base': 'moduleId must be an integer.',
   }),
-  moduleName: Joi.string().optional().messages({
-    'string.base': 'moduleName must be a string.',
-  }),
-}).or('moduleId', 'moduleName');
+  // moduleName: Joi.string().optional().messages({
+  //   'string.base': 'moduleName must be a string.',
+  // }),
+}).or('moduleId');
 
 const deletePermissionSchema = Joi.object({
   permissionId: Joi.number().integer().optional().messages({

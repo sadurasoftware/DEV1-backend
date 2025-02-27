@@ -45,8 +45,31 @@ const getModuleById=async(req,res)=>{
     }
 }
 
+const updateModule=async(req,res)=>{
+    try{
+        const {id}=req.params;
+        const {name}=req.body;
+        console.log(req.body);
+        const module=await Module.findByPk(id);
+        if(!module){
+            logger.warn('Module not found');
+            return res.status(404).json({message:'Module not found'});
+        }
+        module.name=name;
+       
+        await module.save();
+        logger.info('Module updated successfully');
+        return res.status(200).json({message:'Module updated successfully',module});
+    }catch(error){
+        console.log(error);
+        logger.error('Error updating module');
+        return res.status(500).json({message:'server error'});
+    }
+}
+
 module.exports={
     createModule,
     getModule,
     getModuleById,
+    updateModule
 }

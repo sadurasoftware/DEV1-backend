@@ -169,7 +169,8 @@ const getModulesAndPermissionsByRole = async (req, res) => {
 
 const deleteModule = async (req, res) => {
   try {
-    const { moduleId, moduleName } = req.query; 
+    const { moduleId, moduleName } = req.params; 
+    logger.info(`ModuleId:${moduleId}`)
     if (!moduleId && !moduleName) {
       logger.warn('Either moduleId or moduleName is required.');
       return res.status(400).json({ message: 'Either moduleId or moduleName is required.' });
