@@ -42,7 +42,28 @@ const getPermissionById=async(req,res)=>{
     }
 }
 
+const updatePermission=async(req,res)=>{
+    try{
+        const {id}=req.params;
+        const {name}=req.body;
+        console.log(req.body);
+        const permission=await Permission.findByPk(id);
+        if(!permission){
+            logger.warn('Permission not found');
+            return res.status(404).json({message:'Permission not found'});
+        }
+        permission.name=name;
+       
+        await permission.save();
+        logger.info('Permission updated successfully');
+        return res.status(200).json({message:'Permission updated successfully',permission});
+    }catch(error){
+        console.log(error);
+        logger.error('Error updating permission');
+        return res.status(500).json({message:'server error'});
+    }
+}
 
 module.exports={
-    createPermission,getPermission,getPermissionById
+    createPermission,getPermission,getPermissionById, updatePermission
 }

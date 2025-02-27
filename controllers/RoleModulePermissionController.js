@@ -124,7 +124,7 @@ const getModulesAndPermissionsByRole = async (req, res) => {
 
     if (roleModulePermissions.length === 0) {
       logger.warn('No modules or permissions found for this role.');
-      return res.status(404).json({ message: 'No modules or permissions found for this role.' });
+      return res.status(200).json(response);
     }
     const response = {
       roleId: role.id,
@@ -196,7 +196,7 @@ const deleteModule = async (req, res) => {
 };
 const deletePermission = async (req, res) => {
   try {
-    const { permissionId, permissionName } = req.query;
+    const { permissionId, permissionName } = req.params;
     if (!permissionId && !permissionName) {
       logger.warn('Either permissionId or permissionName is required.');
       return res.status(400).json({ message: 'Either permissionId or permissionName is required.' });
