@@ -9,6 +9,7 @@ const User = sequelize.define('User', {
   password: { type: DataTypes.STRING, allowNull: false },
   isVerified: { type: DataTypes.BOOLEAN, defaultValue: false }, 
   roleId:{ type:DataTypes.INTEGER, allowNull:false  },
+  departmentId: { type: DataTypes.INTEGER, allowNull: true },
   terms: { type: DataTypes.BOOLEAN, allowNull: false }, 
 });
 
@@ -16,7 +17,12 @@ User.associate = models => {
   User.belongsTo(models.Role, {
     foreignKey: 'roleId',
     as: 'role',
-  })
+  });
+
+  User.belongsTo(models.Department, {
+    foreignKey: 'departmentId',
+    as: 'department',
+  });
 }
 
 module.exports = User;

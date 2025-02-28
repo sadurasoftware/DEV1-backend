@@ -5,8 +5,9 @@ const Role = require('./Role');
 const Permission = require('./Permission');
 const Module = require('./Module');
 const RoleModulePermission = require('./RoleModulePermission');
+const Department = require('./Department');
 
-const models = { User, Role, Permission, Module, RoleModulePermission };
+const models = { User, Role, Permission, Module, RoleModulePermission, Department };
 
 if (User.associate) {
   User.associate(models);
@@ -23,7 +24,9 @@ if (Module.associate) {
 if (RoleModulePermission.associate) {
   RoleModulePermission.associate(models);
 }
-
+if (Department.associate) {
+  Department.associate(models);
+}
 // async function createSuperAdmin() {
 //   try {
 //     const existingAdmin = await User.findOne({ where: { email: 'bala@gmail.com' } });

@@ -213,6 +213,43 @@ const updateModuleSchema = Joi.object({
   }),
 }).or('moduleId', 'moduleName');
 
+const createDepartmentSchema = Joi.object({
+  name: Joi.string().min(3).max(50).required().messages({
+    'string.base': `"Name" should be a type of 'text'`,
+    'string.empty': `"Name" cannot be empty`,
+    'string.min': `"Name" should have at least {#limit} characters`,
+    'string.max': `"Name" should have at most {#limit} characters`,
+    'any.required': `"Name" is required`,
+  }),
+});
+
+const getDepartmentByIdSchema = Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "id must be a number.",
+    "number.integer": "id must be an integer.",
+    "any.required": "id is required.",
+  }),
+});
+
+const updateDepartmentSchema = Joi.object({
+  name: Joi.string().min(3).max(50).required().messages({
+    'string.base': `"Name" should be a type of 'text'`,
+    'string.empty': `"Name" cannot be empty`,
+    'string.min': `"Name" should have at least {#limit} characters`,
+    'string.max': `"Name" should have at most {#limit} characters`,
+    'any.required': `"Name" is required`,
+  }),
+});
+
+
+const deleteDepartmentSchema = Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "id must be a number.",
+    "number.integer": "id must be an integer.",
+    "any.required": "id is required.",
+  }),
+});
+
 const validate = (schema) => (req, res, next) => {
   const { error } = schema.validate(req.body, { abortEarly: false });
   if (error) {
@@ -255,9 +292,14 @@ module.exports = {
   createRoleModulePermissionValidator: validate(createRoleModulePermissionSchema),
   getModulesForRoleValidator:validateQuery(getModulesForRoleSchema),
   getModulesAndPermissionsByRoleValidator:validateQuery(getModulesAndPermissionsByRole),
-  deleteModuleSchemaValidator:validateQuery(deleteModuleSchema),
-  deletePermissionSchemaValidator:validateQuery(deletePermissionSchema),
+  deleteModuleSchemaValidator:validateParams(deleteModuleSchema),
+  deletePermissionSchemaValidator:validateParams(deletePermissionSchema),
   updatePermissionSchemaValidator:validate(updatePermissionSchema),
   updateModuleSchemaValidator:validate(updateModuleSchema),
-  deleteRoleValidator: validateQuery(deleteRoleSchema),
+  deleteRoleValidator: validateParams(deleteRoleSchema),
+
+  createDepartmentSchemaValidator: validate(createDepartmentSchema),
+  getDepartmentByIdSchemaValidator: validateParams(getDepartmentByIdSchema),
+  updateDepartmentSchemaValidator: validate(updateDepartmentSchema),
+  deleteDepartmentSchemaValidator: validateParams(deleteDepartmentSchema),
 };

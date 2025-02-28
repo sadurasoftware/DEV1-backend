@@ -47,6 +47,7 @@ const register = async (req, res) => {
       password: hashedPassword,
       isVerified: false,
       roleId: roleData.id,
+      departmentId: null,
       terms,
     });
     const tokenPayload = { id: newUser.id, email: newUser.email, firstname: newUser.firstname, lastname: newUser.lastname };
