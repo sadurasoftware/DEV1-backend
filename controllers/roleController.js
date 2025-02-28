@@ -57,7 +57,6 @@ const updateRole=async(req,res)=>{
             return res.status(404).json({message:'Role not found'});
         }
         role.name=name;
-       
         await role.save();
         logger.info('Role updated successfully');
         return res.status(200).json({message:'Role updated successfully',role});
