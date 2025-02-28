@@ -10,6 +10,7 @@ router.post('/rolemodules',authenticateToken,checkRole('superadmin'),validator.g
 router.get('/modulespermissionsByRole',authenticateToken,checkRole('superadmin'),validator.getModulesAndPermissionsByRoleValidator,RoleModulePermissionController.getModulesAndPermissionsByRole);
 
 router.delete('/delete-module/:moduleId',authenticateToken,checkRole('superadmin'),RoleModulePermissionController.deleteModule);
+router.delete('/delete-permission/:permissionId',authenticateToken,checkRole('superadmin'),RoleModulePermissionController.deletePermission);
 // router.delete('/delete-role/:roleId',authenticateToken,checkRole('superadmin'),RoleModulePermissionController.deleteRole);
 router.delete('/delete-permission',authenticateToken,checkRole('superadmin'),validator.deletePermissionSchemaValidator,RoleModulePermissionController.deletePermission);
 router.put('/update-permission',authenticateToken,checkRole('superadmin'),validator.updatePermissionSchemaValidator,RoleModulePermissionController.updatePermission);
