@@ -3,6 +3,7 @@ const userController=require('../controllers/userController');
 
 const router=express.Router();
 
+router.post('/create',userController.createUser)
 router.get('/users', userController.getUsers)
 router.get('/admins', userController.getAdmins)
 router.get('/', userController.getUsers)

@@ -12,4 +12,8 @@ const Department=sequelize.define("Department",{
         allowNull:false}
 });
 
+Department.associate = (models) => {
+  Department.hasMany(models.User, { foreignKey: 'departmentId', as: 'users' });
+};
+
 module.exports = Department;
