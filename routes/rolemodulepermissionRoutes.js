@@ -9,8 +9,11 @@ router.post('/create',authenticateToken,checkRole('superadmin'),validator.create
 router.post('/rolemodules',authenticateToken,checkRole('superadmin'),validator.getModulesForRoleValidator,RoleModulePermissionController.getModulesForRole);
 router.get('/modulespermissionsByRole',authenticateToken,checkRole('superadmin'),validator.getModulesAndPermissionsByRoleValidator,RoleModulePermissionController.getModulesAndPermissionsByRole);
 
-router.delete('/delete-module',authenticateToken,checkRole('superadmin'),validator.deleteModuleSchemaValidator,RoleModulePermissionController.deleteModule);
+router.delete('/delete-module/:moduleId',authenticateToken,checkRole('superadmin'),RoleModulePermissionController.deleteModule);
+// router.delete('/delete-role/:roleId',authenticateToken,checkRole('superadmin'),RoleModulePermissionController.deleteRole);
 router.delete('/delete-permission',authenticateToken,checkRole('superadmin'),validator.deletePermissionSchemaValidator,RoleModulePermissionController.deletePermission);
-router.put('/update-permission',validator.updatePermissionSchemaValidator,RoleModulePermissionController.updatePermission);
-router.put('/update-module',validator.updateModuleSchemaValidator,RoleModulePermissionController.updateModule);
+router.put('/update-permission',authenticateToken,checkRole('superadmin'),validator.updatePermissionSchemaValidator,RoleModulePermissionController.updatePermission);
+router.put('/update-module',authenticateToken,checkRole('superadmin'),validator.updateModuleSchemaValidator,RoleModulePermissionController.updateModule);
+router.delete('/delete-role/:roleId',authenticateToken,checkRole('superadmin'),RoleModulePermissionController.deleteRole);
+
 module.exports=router;

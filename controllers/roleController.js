@@ -45,6 +45,7 @@ const getRollById=async(req,res)=>{
         return res.status(500).json({message:'server error'});
     }
 }
+
 const updateRole=async(req,res)=>{
     try{
         const {id}=req.params;
@@ -67,23 +68,6 @@ const updateRole=async(req,res)=>{
     }
 }
 
-const deleteRole=async(req,res)=>{
-    try{
-        const {id}=req.params;
-        const role=await Role.findByPk(id);
-        if(!role){
-            logger.warn('Role not found');
-            return res.status(404).json({message:'Role not found'});
-        }
-        await role.destroy();
-        logger.info('Role deleted successfully');
-        return res.status(200).json({message:'Role deleted successfully',role});
-    }catch(error){
-        console.log(error);
-        logger.error('Error deleting role');
-        return res.status(500).json({message:'server error'});
-    }
-}
 module.exports={
-    createRole,getAllRoles,getRollById,updateRole,deleteRole
+    createRole,getAllRoles,getRollById,updateRole
 }

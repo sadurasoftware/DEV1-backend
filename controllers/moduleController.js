@@ -67,29 +67,9 @@ const updateModule=async(req,res)=>{
     }
 }
 
-const deleteModule=async(req,res)=>{
-    try{
-        const {id}=req.params;
-        const module=await Module.findByPk(id);
-        if(!module){
-            logger.warn('Module not found');
-            return res.status(404).json({message:'Module not found'});
-        }
-        await module.destroy();
-        logger.info('Module deleted successfully');
-        return res.status(200).json({message:'Module deleted successfully',module});
-    }catch(error){
-        console.log(error);
-        logger.error('Error deleting module');
-        return res.status(500).json({message:'server error'});
-    }
-}
-
-
 module.exports={
     createModule,
     getModule,
     getModuleById,
-    updateModule,
-    deleteModule,
+    updateModule
 }

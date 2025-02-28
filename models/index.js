@@ -32,11 +32,13 @@ if (RoleModulePermission.associate) {
 //       const hashedPassword = await bcrypt.hash('Balak123@', 10); // Encrypt password before saving
 
 //       await User.create({
-//         username: 'balak',
+//         firstname: 'bala',
+//         lastname: 'kumar',
 //         email: 'bala@gmail.com',
 //         password: hashedPassword,
 //         isVerified:1,
 //         roleId: 1,
+//         terms: 1
 //       });
 
 //       console.log('SuperAdmin user created successfully.');
