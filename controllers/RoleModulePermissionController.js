@@ -121,16 +121,17 @@ const getModulesAndPermissionsByRole = async (req, res) => {
         },
       ],
     });
-
-    if (roleModulePermissions.length === 0) {
-      logger.warn('No modules or permissions found for this role.');
-      return res.status(200).json(response);
-    }
+    
     const response = {
       roleId: role.id,
       roleName: role.name,
       roleModules: []
     };
+    if (roleModulePermissions.length === 0) {
+      logger.warn('No modules or permissions found for this role.');
+      return res.status(200).json(response);
+    }
+    
 
     roleModulePermissions.forEach(item => {
       const module = item.Module; 
