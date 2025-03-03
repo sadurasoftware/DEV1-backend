@@ -250,6 +250,63 @@ const deleteDepartmentSchema = Joi.object({
   }),
 });
 
+const createUservalidator = Joi.object({
+  firstname: Joi.string().min(3).max(50).required().messages({
+    'string.empty': 'Name is required',
+    'string.min': 'Firstname must be at least 3 characters long',
+    'string.max': 'Name must not exceed 50 characters',
+  }),
+  lastname: Joi.string().min(1).max(50).required().messages({
+    'string.empty': 'Name is required',
+    'string.min': 'lastname must be at least 1 characters long',
+    'string.max': 'Name must not exceed 50 characters',
+  }),
+  email: Joi.string().email().required().messages({
+    'string.empty': 'Email is required',
+    'string.email': 'Invalid email format',
+  }),
+  password: Joi.string().pattern(passwordRegex).required().messages({
+    'string.empty': 'Password is required',
+    'string.pattern.base':
+      'Password should be a combination of one uppercase, one lowercase, one special character, one digit, and be between 8 and 20 characters long',
+  }),
+  role: Joi.string().required().messages({
+    'string.empty': 'Role is required',
+    'string.base': 'Role must be a valid string',
+  }),
+  departmentId: Joi.number().integer().required().messages({
+    'number.base': 'departmentId must be a number.',
+    'any.required': 'departmentId is required.',
+  }),
+  terms: Joi.boolean().required().messages({
+    'boolean.base': 'terms must be a boolean.',
+    'any.required': 'terms is required.',
+  }),
+})
+const updateUservalidator = Joi.object({
+  firstname: Joi.string().min(3).max(50).required().messages({
+    'string.empty': 'Name is required',
+    'string.min': 'Firstname must be at least 1 characters long',
+    'string.max': 'Name must not exceed 50 characters',
+  }),
+  lastname: Joi.string().min(1).max(50).required().messages({
+    'string.empty': 'Name is required',
+    'string.min': 'lastname must be at least 1 characters long',
+    'string.max': 'Name must not exceed 50 characters',
+  }),
+  email: Joi.string().email().required().messages({
+    'string.empty': 'Email is required',
+    'string.email': 'Invalid email format',
+  }),
+  role: Joi.string().required().messages({
+    'string.empty': 'Role is required',
+    'string.base': 'Role must be a valid string',
+  }),
+  departmentId: Joi.number().integer().required().messages({
+    'number.base': 'departmentId must be a number.',
+    'any.required': 'departmentId is required.',
+  }),
+})
 const validate = (schema) => (req, res, next) => {
   const { error } = schema.validate(req.body, { abortEarly: false });
   if (error) {
@@ -302,4 +359,7 @@ module.exports = {
   getDepartmentByIdSchemaValidator: validateParams(getDepartmentByIdSchema),
   updateDepartmentSchemaValidator: validate(updateDepartmentSchema),
   deleteDepartmentSchemaValidator: validateParams(deleteDepartmentSchema),
+
+  createUservalidator: validate(createUservalidator),
+  updateUservalidator: validate(updateUservalidator),
 };
