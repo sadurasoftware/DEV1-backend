@@ -1,4 +1,4 @@
-const { User } = require('../models');
+const { User, Department } = require('../models');
 const { Role } = require('../models');
 const bcryptHelper = require('../utils/bcryptHelper');
 const jwtHelper = require('../utils/jwtHelper');
@@ -15,7 +15,7 @@ const handleError = (res, error, message) => {
 
 const register = async (req, res) => {
   try {
-    const { firstname, lastname, email, password, terms, role } = req.body;
+    const { firstname, lastname, email, password, terms, role, department } = req.body;
     console.log(req.body); 
 
     // if (password !== confirmPassword) {
@@ -39,6 +39,17 @@ const register = async (req, res) => {
       logger.warn(`Invalid role provided during registration: ${role}`);
       return res.status(400).json({ message: 'Invalid role' });
     }
+
+    let departmentId = null;
+    if (department) {
+      const departmentData = await Department.findOne({ where: { name: department } });
+      if (!departmentData) {
+        logger.warn(`Invalid department provided during registration: ${department}`);
+        return res.status(400).json({ message: 'Invalid department' });
+      }
+      departmentId = departmentData.id;  
+    }
+
     const hashedPassword = await bcryptHelper.hashPassword(password);
     const newUser = await User.create({
       firstname,
@@ -47,7 +58,7 @@ const register = async (req, res) => {
       password: hashedPassword,
       isVerified: false,
       roleId: roleData.id,
-      departmentId: null,
+      departmentId,
       terms,
     });
     const tokenPayload = { id: newUser.id, email: newUser.email, firstname: newUser.firstname, lastname: newUser.lastname };
