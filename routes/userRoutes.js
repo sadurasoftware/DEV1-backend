@@ -11,9 +11,10 @@ router.get('/admins', userController.getAdmins)
 router.get('/', userController.getUsers)
 router.get('/:id', userController.getUser);
 router.get('/:id', userController.fetchUserData);
-router.put('/:id',authenticateToken,checkPermission("User","update"),userController.updateUser);
+router.put('/update/:id',authenticateToken,checkPermission("User","update"),validator.updateUservalidator,userController.updateUser);
 router.get('/:id', userController.getAdmin);
 router.get('/:id', userController.fetchAdminData);
 router.put('/:id', userController.updateAdmin);
-router.delete('/:id',userController.deleteuser)
+router.get('/view/:id',authenticateToken,checkPermission("User","Read"),validator.viewUservalidator,userController.viewUser)
+router.delete('/delete/:id',authenticateToken,checkPermission("User","delete"),validator.deleteUservalidator,userController.deleteUser);
 module.exports=router;
