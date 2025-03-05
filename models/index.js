@@ -6,8 +6,8 @@ const Permission = require('./Permission');
 const Module = require('./Module');
 const RoleModulePermission = require('./RoleModulePermission');
 const Department = require('./Department');
-
-const models = { User, Role, Permission, Module, RoleModulePermission, Department };
+const Ticket = require('./Ticket');
+const models = { User, Role, Permission, Module, RoleModulePermission, Department, Ticket };
 
 if (User.associate) {
   User.associate(models);

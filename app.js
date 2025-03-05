@@ -15,6 +15,8 @@ const permissionRoutes = require('./routes/permissionRoutes');
 const moduleRoutes = require('./routes/moduleRoutes');
 const roleModulePermissionRoutes = require('./routes/rolemodulepermissionRoutes');
 const department=require('./routes/departmentRoutes')
+const ticketRoutes=require('./routes/ticketRoutes')
+const categoryRoutes=require('./routes/categoryRoutes')
 dotenv.config();
 
 const app = express();
@@ -55,7 +57,8 @@ app.use('/api/permissions', permissionRoutes);
 app.use('/api/modules', moduleRoutes);
 app.use('/api/role-module-permissions', roleModulePermissionRoutes);
 app.use('/api/department',department)
-
+app.use('/api/tickets',ticketRoutes)
+app.use('/api/category',categoryRoutes)
 app.use((err, req, res, next) => {
   logger.error(err.message);
   res.status(err.status || 500).json({ message: 'Internal Server Error' });
