@@ -1,5 +1,6 @@
 const { User } = require('../models');
 const { Role } = require('../models');
+const {Module,Permission,RoleModulePermission,Department}=require('../models');
 const bcryptHelper = require('../utils/bcryptHelper');
 const jwtHelper = require('../utils/jwtHelper');
 const logger = require('../config/logger');
@@ -89,32 +90,43 @@ async function fetchUserData(req, res) {
 }
 async function updateUser(req, res) {
   try {
-    const { id } = req.params;  
-    const { firstname, lastname, email, departmentId, role } = req.body;
-    logger.info(`Updating user: ${id}`);
+    const { id } = req.params;
+    const { firstname, lastname, email, departmentId, role: roleName } = req.body;
+    logger.info(`User ${req.user.id} attempting to update user: ${id}`);
+
     const user = await User.findByPk(id);
     if (!user) {
       logger.warn(`User not found: ${id}`);
       return res.status(404).json({ message: 'User not found' });
     }
-    const roleData = await Role.findOne({ where: { name: role } });
-    if (!roleData) {
-      logger.warn(`Invalid role provided during update: ${role}`);
-      return res.status(400).json({ message: 'Invalid role' });
+
+    const allowedRoles = ['superadmin', 'admin'];
+    const userRole = await Role.findByPk(req.user.roleId); 
+    if (!allowedRoles.includes(userRole.name) && req.user.id !== parseInt(id)) {
+      logger.warn(`Unauthorized attempt by user ${req.user.id} to update user ${id}`);
+      return res.status(403).json({ message: 'You are not authorized to update this user.' });
+    }
+
+    if (roleName) {
+      const roleData = await Role.findOne({ where: { name: roleName } });
+      if (!roleData) {
+        logger.warn(`Invalid role provided during update: ${roleName}`);
+        return res.status(400).json({ message: 'Invalid role' });
+      }
+      user.roleId = roleData.id;
     }
 
     user.firstname = firstname || user.firstname;
     user.lastname = lastname || user.lastname;
     user.email = email || user.email;
     user.departmentId = departmentId || user.departmentId;
-    user.roleId = roleData.id || user.roleId;
 
     await user.save();
 
-    return res.status(200).json({message: 'User updated successfully',userData: user,});
+    logger.info(`User ${id} updated successfully by user ${req.user.id}`);
+    return res.status(200).json({ message: 'User updated successfully', userData: user });
   } catch (error) {
     logger.error(`Error updating user: ${error.message}`);
-    console.error(error);
     return res.status(500).json({ message: 'Server error' });
   }
 }
@@ -207,18 +219,102 @@ async function updateAdmin(req, res) {
     return res.status(500).json({ message: 'Server error' });
   }
 }
-const deleteuser=async(req,res)=>{
-  try{
-    const {id}=req.params;
-    const user=await User.findByPk(id);
-    if(!user){
+async function viewUser(req, res) {
+  try {
+    const { id } = req.params;
+    logger.info(`User ${req.user.id} attempting to view user: ${id}`);
+
+    const user = await User.findByPk(id, {
+      attributes: ['id', 'firstname', 'lastname', 'email', 'departmentId', 'roleId'],
+      include: [
+        { model: Role, as: 'role', attributes: ['name'] },
+        { model: Department, as: 'department', attributes: ['name'] },
+      ],
+    });
+
+    if (!user) {
       logger.warn(`User not found: ${id}`);
       return res.status(404).json({ message: 'User not found' });
     }
+
+    const module = await Module.findOne({ where: { name: 'User' } });
+    if (!module) {
+      logger.warn('Module not found');
+      return res.status(400).json({ message: 'Module not found' });
+    }
+
+    const permission = await Permission.findOne({ where: { name: 'read' } });
+    if (!permission) {
+      logger.warn('Permission not found');
+      return res.status(400).json({ message: 'Permission not found' });
+    }
+
+    const rolePermission = await RoleModulePermission.findOne({
+      where: {
+        roleId: req.user.roleId,
+        moduleId: module.id,
+        permissionId: permission.id,
+        status: true,
+      },
+    });
+
+    if (!rolePermission && req.user.id !== parseInt(id)) {
+      logger.warn(`Unauthorized attempt by user ${req.user.id} to view user ${id}`);
+      return res.status(403).json({ message: 'You are not authorized to view this user.' });
+    }
+
+    logger.info(`User ${id} viewed successfully by user ${req.user.id}`);
+    return res.status(200).json({ message: 'User details fetched successfully', userData: user });
+  } catch (error) {
+    logger.error(`Error viewing user: ${error.message}`);
+    return res.status(500).json({ message: 'Server error' });
+  }
+}
+
+
+
+async function deleteUser(req, res) {
+  try {
+    const { id } = req.params;
+    logger.info(`User ${req.user.id} attempting to delete user: ${id}`);
+
+    const user = await User.findByPk(id);
+    if (!user) {
+      logger.warn(`User not found: ${id}`);
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const module = await Module.findOne({ where: { name: 'User' } });
+    if (!module) {
+      logger.warn('Module not found');
+      return res.status(400).json({ message: 'Module not found' });
+    }
+
+    const permission = await Permission.findOne({ where: { name: 'delete' } });
+    if (!permission) {
+      logger.warn('Permission not found');
+      return res.status(400).json({ message: 'Permission not found' });
+    }
+
+    const rolePermission = await RoleModulePermission.findOne({
+      where: {
+        roleId: req.user.roleId,
+        moduleId: module.id,
+        permissionId: permission.id,
+        status: true,
+      },
+    });
+
+    if (!rolePermission) {
+      logger.warn(`Unauthorized attempt by user ${req.user.id} to delete user ${id}`);
+      return res.status(403).json({ message: 'You are not authorized to delete this user.' });
+    }
+
     await user.destroy();
-    logger.info(`User deleted successfully: ${id}`);
+
+    logger.info(`User ${id} deleted successfully by user ${req.user.id}`);
     return res.status(200).json({ message: 'User deleted successfully' });
-  }catch(error){
+  } catch (error) {
     logger.error(`Error deleting user: ${error.message}`);
     return res.status(500).json({ message: 'Server error' });
   }
@@ -233,5 +329,6 @@ module.exports = {
   getAdmin,
   fetchAdminData,
   updateAdmin,
-  deleteuser
+  viewUser,
+  deleteUser
 };

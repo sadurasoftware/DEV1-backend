@@ -286,7 +286,7 @@ const createUservalidator = Joi.object({
 const updateUservalidator = Joi.object({
   firstname: Joi.string().min(3).max(50).required().messages({
     'string.empty': 'Name is required',
-    'string.min': 'Firstname must be at least 1 characters long',
+    'string.min': 'Firstname must be at least 3 characters long',
     'string.max': 'Name must not exceed 50 characters',
   }),
   lastname: Joi.string().min(1).max(50).required().messages({
@@ -306,7 +306,23 @@ const updateUservalidator = Joi.object({
     'number.base': 'departmentId must be a number.',
     'any.required': 'departmentId is required.',
   }),
-})
+});
+const viewUserSchema=Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "id must be a number.",
+    "number.integer": "id must be an integer.",
+    "any.required": "id is required.",
+  }),
+});
+const deleteUserSchema=Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "id must be a number.",
+    "number.integer": "id must be an integer.",
+    "any.required": "id is required.",
+  }),
+});
+
+
 const validate = (schema) => (req, res, next) => {
   const { error } = schema.validate(req.body, { abortEarly: false });
   if (error) {
@@ -362,4 +378,6 @@ module.exports = {
 
   createUservalidator: validate(createUservalidator),
   updateUservalidator: validate(updateUservalidator),
+  viewUservalidator: validateParams(viewUserSchema),
+  deleteUservalidator: validateParams(deleteUserSchema)
 };

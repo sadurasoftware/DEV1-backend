@@ -1,5 +1,6 @@
 const { User, Department } = require('../models');
 const { Role } = require('../models');
+const {RoleModulePermission,Module,Permission}=require('../models');
 const bcryptHelper = require('../utils/bcryptHelper');
 const jwtHelper = require('../utils/jwtHelper');
 const logger = require('../config/logger');
@@ -126,13 +127,24 @@ const login = async (req, res) => {
       maxAge: 1000 * 60 * 60, 
     });
     logger.info(`User logged in successfully: ${email}`);
-    
+    const permissions = await RoleModulePermission.findAll({
+      where: { roleId: user.roleId, status: true },
+      include: [
+        { model: Module, as: "Module", attributes: ["name"] }, 
+        { model: Permission, as: "Permission", attributes: ["name"] }, 
+      ],
+    });
+
+    const permissionList = permissions.map((perm) => ({
+      module: perm.Module.name,
+      permission: perm.Permission.name,
+    }));
       //   const roleData = await Role.findOne({ where: { id: user.roleId } });
       //   if (!roleData) {
       //   logger.warn(`Invalid role provided during registration: ${user.roleId}`);
       //   return res.status(400).json({ message: 'Invalid role' });
       // }
-    return res.status(200).json({ token, user});
+    return res.status(200).json({ token, user,permissions: permissionList});
   } catch (error) {
     return handleError(res, error, 'Login error');
   }
