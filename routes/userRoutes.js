@@ -15,5 +15,5 @@ router.put('/:id',authenticateToken,checkPermission("User","update"),userControl
 router.get('/:id', userController.getAdmin);
 router.get('/:id', userController.fetchAdminData);
 router.put('/:id', userController.updateAdmin);
-router.delete('/:id',userController.deleteuser)
+router.delete('/users/:id',userController.deleteuser)
 module.exports=router;
