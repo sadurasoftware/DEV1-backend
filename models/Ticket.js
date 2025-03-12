@@ -40,8 +40,21 @@ const Ticket = sequelize.define('Ticket', {
   }
 }, { timestamps: true });
 
-Ticket.associate= (models) => {
-    Ticket.belongsTo(models.category, { foreignKey: 'categoryId', as: 'category' });
+Ticket.associate = (models) => {
+  Ticket.belongsTo(models.Category, {
+    foreignKey: 'categoryId',
+    as: 'category'
+  });
+  Ticket.belongsTo(models.User, {
+    foreignKey: 'createdBy',
+    as: 'user'
+  });
+  Ticket.belongsTo(models.User, {
+    foreignKey: 'assignedTo',
+    as: 'assignedUser'
+  });
 };
+
+
 
 module.exports = Ticket;
