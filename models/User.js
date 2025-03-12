@@ -23,6 +23,15 @@ User.associate = models => {
     foreignKey: 'departmentId',
     as: 'department',
   });
+  User.hasMany(models.Ticket, {
+    foreignKey: 'createdBy',
+    as: 'createdTickets',
+  });
+
+  User.hasMany(models.Ticket, {
+    foreignKey: 'assignedTo',
+    as: 'assignedTickets',
+  });
 }
 
 module.exports = User;

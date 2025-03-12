@@ -16,6 +16,6 @@ router.get('/:id', userController.getAdmin);
 router.get('/:id', userController.fetchAdminData);
 router.put('/:id', userController.updateAdmin);
 router.get('/view/:id',authenticateToken,checkPermission("User","Read"),validator.viewUservalidator,userController.viewUser)
-router.delete('/delete/:id',authenticateToken,checkPermission("User","delete"),validator.deleteUservalidator,userController.deleteUser);
-router.delete('/users/:id',userController.deleteuser)
+router.delete('/users/:id',authenticateToken,checkPermission("User","delete"),validator.deleteUservalidator,userController.deleteUser);
+
 module.exports=router;

@@ -6,27 +6,16 @@ const Permission = require('./Permission');
 const Module = require('./Module');
 const RoleModulePermission = require('./RoleModulePermission');
 const Department = require('./Department');
+const Category = require('./Category');
 const Ticket = require('./Ticket');
-const models = { User, Role, Permission, Module, RoleModulePermission, Department, Ticket };
+const models = { User, Role, Permission, Module, RoleModulePermission, Department,Category, Ticket };
 
-if (User.associate) {
-  User.associate(models);
-}
-if (Role.associate) {
-  Role.associate(models);
-}
-if (Permission.associate) {
-  Permission.associate(models);
-}
-if (Module.associate) {
-  Module.associate(models);
-}
-if (RoleModulePermission.associate) {
-  RoleModulePermission.associate(models);
-}
-if (Department.associate) {
-  Department.associate(models);
-}
+Object.keys(models).forEach((modelName) => {
+  if (models[modelName].associate) {
+    models[modelName].associate(models);
+  }
+});
+
 // async function createSuperAdmin() {
 //   try {
 //     const existingAdmin = await User.findOne({ where: { email: 'bala@gmail.com' } });
