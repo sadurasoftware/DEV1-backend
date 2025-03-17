@@ -1,4 +1,4 @@
-name: CI/CD Pipeline for Node.js lambda functions
+name: CI/CD Pipeline
 
 on:
   push:
