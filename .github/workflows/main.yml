@@ -1,4 +1,4 @@
-name: CI/CD Pipeline Deploy Lambda
+name: CI/CD Pipeline Deploy Lambda Function
 
 on:
   push:
