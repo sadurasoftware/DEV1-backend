@@ -25,10 +25,9 @@ jobs:
         run: zip -r publish.zip ./*
 
       - name: Deploy to AWS Lambda
-  run: |
-    zip -r publish.zip ./*
-    aws lambda update-function-code \
-      --function-name node-dev \
-      --zip-file fileb://publish.zip \
-      --region us-east-1
+        run: |
+          aws lambda update-function-code \
+            --function-name node-dev \
+            --zip-file fileb://publish.zip \
+            --region us-east-1
         
