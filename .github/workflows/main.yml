@@ -31,5 +31,13 @@ jobs:
             --zip-file fileb://publish.zip 
             --region us-east-1
         env:
-          AWS_ACCESS_KEY_ID: AKIA4VDBMHGCXOFPUQYZ
-          AWS_SECRET_ACCESS_KEY: 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
+          AWS_ACCESS_KEY_ID: ${{ secrets.DEV_ENV_FILE }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.DEV_ENV_FILE }}
+          AWS_REGION : ${{ secrets.DEV_ENV_FILE }}
+          DB_HOST: dev-db.cvi4kce4mqlf.us-east-1.rds.amazonaws.com
+          DB_USER: admin
+          DB_PASS: awsSadura#db123
+          DB_NAME: dev-db
+          DB_DIALECT: mysql
+          SALT_ROUNDS : 10
+          JWT_SECRET: afdhgjhkikykt
