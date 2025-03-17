@@ -67,12 +67,12 @@ const register = async (req, res) => {
     const verificationUrl = `${process.env.VERIFICATION_URL}/verify-email/${token}`;
     await emailHelper.verificationEmail(email, verificationUrl, firstname);
     logger.info(`User registered successfully: ${email}`);
-    return res.status(201).json({
+    return res.status(200).json({
       message: 'User created successfully. Please verify your email.',
       user: { id: newUser.id, firstname: newUser.firstname, email: newUser.email, token },
     });
   } catch (error) {
-    return handleError(res, error, 'Registration error');
+    return res.status(500).json({message:'server error'});
   }
 };
 
@@ -146,7 +146,7 @@ const login = async (req, res) => {
       // }
     return res.status(200).json({ token, user,permissions: permissionList});
   } catch (error) {
-    return handleError(res, error, 'Login error');
+    return res.status(500).json({message:'server error'});
   }
 };
 

@@ -1,13 +1,13 @@
 const Category  = require('../models/Category');
 const createCategory = async (req, res) => {
   try {
-    const { name, description, status } = req.body;
+    const { name} = req.body;
 
     if (!name) {
       return res.status(400).json({ message: 'Category name is required' });
     }
 
-    const category = await Category.create({ name, description, status });
+    const category = await Category.create({ name });
     return res.status(201).json({ message: 'Category created successfully', category });
   } catch (error) {
     console.error('Error creating category:', error);
@@ -16,7 +16,7 @@ const createCategory = async (req, res) => {
 };
 const getCategories = async (req, res) => {
   try {
-    const categories = await Category.findAll({ where: { status: true } });
+    const categories = await Category.findAll();
     return res.status(200).json(categories);
   } catch (error) {
     console.error('Error fetching categories:', error);
@@ -27,17 +27,13 @@ const getCategories = async (req, res) => {
 const updateCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, status } = req.body;
+    const { name } = req.body;
 
     const category = await Category.findByPk(id);
     if (!category) {
       return res.status(404).json({ message: 'Category not found' });
     }
-
     category.name = name || category.name;
-    category.description = description || category.description;
-    category.status = status !== undefined ? status : category.status;
-
     await category.save();
     return res.status(200).json({ message: 'Category updated successfully', category });
   } catch (error) {
