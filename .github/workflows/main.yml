@@ -1,9 +1,6 @@
 name: Manual workflow
 
 on:
-  push:
-    branches:
-      - bala-dev
   workflow_dispatch:  
 
 jobs:
