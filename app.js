@@ -65,7 +65,7 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ message: 'Internal Server Error' });
 });
 app.get('/', (req, res) => {
-  res.send('Welcome to the Node.js CI/CD pipeline for your Application deployment in aws lambda function!');
+  res.send('Welcome to the Node.js ci/cd pipeline for your Application deployment in aws lambda!');
 });
 
 app.use(errorHandler);
