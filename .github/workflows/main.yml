@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - bala-dev
-  workflow_dispatch:  # ✅ Enables "Run workflow" button
+  workflow_dispatch:  
 
 jobs:
   deploy_lambda:
