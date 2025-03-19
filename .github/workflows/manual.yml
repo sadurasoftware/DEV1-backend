@@ -1,9 +1,7 @@
-name: CI/CD Pipeline lambda function
+name: Manual CI/CD Deployment
 
 on:
-  push:
-    branches:
-      - bala-dev  
+  workflow_dispatch:  
 
 jobs:
   deploy_lambda:
