@@ -1,10 +1,10 @@
 name: Manual workflows for deployment
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # ✅ Manual trigger option
   push:
     branches:
-      - bala-dev
+      - bala-dev       # ✅ Trigger on pushes to bala-dev
    
 jobs:
   deploy_lambda:
@@ -27,7 +27,9 @@ jobs:
           echo -e "${{ secrets.DEV_ENV_FILE }}" > .env
 
       - name: Zip project for deployment
-        run: zip -r publish.zip ./*
+        run: |
+          zip -r publish.zip . -x "*.git*" "node_modules/*" "*.github/*"
+          ls -lh publish.zip  # Show zip file size and verify contents
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
