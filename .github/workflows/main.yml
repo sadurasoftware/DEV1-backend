@@ -1,11 +1,11 @@
-name: Manual workflows for deployment
+name: Manual Workflows 
 
 on:
-  workflow_dispatch:  # ✅ Manual trigger option
+  workflow_dispatch:   # ✅ Show "Run workflow" button in GitHub Actions tab (on develop)
   push:
     branches:
-      - bala-dev       # ✅ Trigger on pushes to bala-dev
-   
+      - bala-dev       # ✅ Auto-trigger when code is pushed to bala-dev branch
+
 jobs:
   deploy_lambda:
     runs-on: ubuntu-latest
@@ -22,14 +22,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Create .env with correct formatting
-        run: |
-          echo -e "${{ secrets.DEV_ENV_FILE }}" > .env
+      - name: Create .env with secrets
+        run: echo "${{ secrets.DEV_ENV_FILE }}" > .env
 
       - name: Zip project for deployment
         run: |
           zip -r publish.zip . -x "*.git*" "node_modules/*" "*.github/*"
-          ls -lh publish.zip  # Show zip file size and verify contents
+          ls -lh publish.zip  # Optional: shows zip file size
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -43,4 +42,4 @@ jobs:
           aws lambda update-function-code \
             --function-name node-dev \
             --zip-file fileb://publish.zip \
-            --region us-east-1
+            --region ${{ secrets.AWS_REGION }}
