@@ -1,10 +1,14 @@
-name: CI/CD Pipeline lambda function
+name: Manual workflow configuration
 
 on:
   push:
     branches:
       - bala-dev
   workflow_dispatch:  
+  permissions:
+  contents: write         
+  packages: read          
+  id-token: write         
 jobs:
   deploy_lambda:
     runs-on: ubuntu-latest
