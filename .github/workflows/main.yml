@@ -1,6 +1,9 @@
-name: CI/CD Pipeline lambda function
+name: Manual workflow
 
 on:
+  push:
+    branches:
+      - bala-dev
   workflow_dispatch:  
 
 jobs:
