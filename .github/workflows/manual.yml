@@ -1,9 +1,7 @@
-name: CI/CD Pipeline lambda function
+name: Manual CI/CD Deployment
 
 on:
-  push:
-    branches:
-      - bala-dev  # Auto trigger when code pushed to bala-dev
+  workflow_dispatch:  # Enables "Run workflow" button
 
 jobs:
   deploy_lambda:
