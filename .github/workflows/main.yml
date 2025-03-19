@@ -1,11 +1,10 @@
-name: Manual workflows
+name: CI/CD Pipeline lambda function
 
 on:
   push:
     branches:
       - bala-dev
-      workflow_dispatch:
-
+  workflow_dispatch:  
 jobs:
   deploy_lambda:
     runs-on: ubuntu-latest
