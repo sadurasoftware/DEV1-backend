@@ -1,11 +1,11 @@
 name: Manual workflows for deployment
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - bala-dev
-  workflow_dispatch:  
-
+   
 jobs:
   deploy_lambda:
     runs-on: ubuntu-latest
