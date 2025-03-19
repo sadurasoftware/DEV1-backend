@@ -17,6 +17,7 @@ const roleModulePermissionRoutes = require('./routes/rolemodulepermissionRoutes'
 const department=require('./routes/departmentRoutes')
 const ticketRoutes=require('./routes/ticketRoutes')
 const categoryRoutes=require('./routes/categoryRoutes')
+const serverless = require("serverless-http");
 dotenv.config();
 
 const app = express();
@@ -64,7 +65,7 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ message: 'Internal Server Error' });
 });
 app.get('/', (req, res) => {
-  res.send('Welcome to the Node.js Application!');
+  res.send('Welcome to the Node.js ci/cd pipeline for your Application ');
 });
 
 app.use(errorHandler);
@@ -80,4 +81,4 @@ app.listen(PORT, async () => {
   }
 });
 
-module.exports = app;
+module.exports.handler = serverless(app);
