@@ -29,7 +29,7 @@ jobs:
 
       - name: Zip project for Lambda
         run: |
-          zip -r publish.zip . -x "*.git*" "node_modules/*" "*.github/*"
+          zip -r publish.zip . -x "*.git*" ".github/*" "publish.zip"
           ls -lh publish.zip
 
       - name: Configure AWS Credentials
