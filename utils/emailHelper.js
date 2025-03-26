@@ -43,9 +43,34 @@ const forgotPasswordEmail = async(to, url, username)=>{
     console.log(url)
 }
 
+const ticketAssignedEmail = async (to, firstname, ticketId, title, description) => {
+    try {
+        await transporter.sendMail({
+            from: process.env.APP_EMAIL,
+            to,
+            subject: `New Ticket Assigned: ${title}`,
+            html: `<div style="width: 950px; background-color: white; border: 1px solid black; padding: 20px;">
+                <h2 style="text-align: center;">NEW TICKET ASSIGNED</h2>
+                <p style="font-size: 16px; color: #333;">Hi ${firstname},</p>
+                <p style="font-size: 16px; color: #333;">A new ticket has been assigned to you.</p>
+                <p style="font-size: 16px; color: #333;"><strong>Ticket ID:</strong> ${ticketId}</p>
+                <p style="font-size: 16px; color: #333;"><strong>Title:</strong> ${title}</p>
+                <p style="font-size: 16px; color: #333;"><strong>Description:</strong> ${description}</p>
+                <p style="text-align: left;">
+                    <a href="http://yourapp.com/tickets/${ticketId}" style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">View Ticket</a>
+                </p>
+                <p style="font-size: 16px; color: #333;">Please take necessary actions as soon as possible.</p>
+            </div>`
+        });
+        console.log(`Ticket assignment email sent to ${to}`);
+    } catch (error) {
+        console.error(`Error sending ticket assignment email: ${error.message}`);
+    }
+};
 
 
 module.exports = { 
     verificationEmail,
-    forgotPasswordEmail
+    forgotPasswordEmail,
+    ticketAssignedEmail
 }

@@ -10,4 +10,6 @@ router.get('/support-team',ticketController.getSupportTeamUsers);
 router.get('/get-all-tickets',ticketController.getAllTickets);
 router.get('/get-ticket/:id',ticketController.getTicketById);
 router.put('/update-ticket-status/:id',ticketController.updateTicketStatus);
+router.get('/tickets-status-count', ticketController.getTicketStatusCount);
+
 module.exports = router;

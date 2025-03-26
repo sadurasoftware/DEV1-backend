@@ -1,5 +1,6 @@
 const { User } = require('../models');
 const { Role } = require('../models');
+const { Op } = require('sequelize');
 const {Module,Permission,RoleModulePermission,Department}=require('../models');
 const bcryptHelper = require('../utils/bcryptHelper');
 const jwtHelper = require('../utils/jwtHelper');
@@ -131,21 +132,47 @@ async function updateUser(req, res) {
   }
 }
 
-const getUsers=async(req,res)=>{
-  try{
-    const users = await User.findAll({
-      where: {
-        roleId: 3
-      }
+const getUsers = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search, departmentId } = req.query;
+    const whereClause = { roleId: 3 };
+    if (search) {
+      whereClause[Op.or] = [
+        { firstname: { [Op.like]: `%${search}%` } },
+        { lastname: { [Op.like]: `%${search}%` } },
+        { email: { [Op.like]: `%${search}%` } },
+      ];
+    }
+    if (departmentId) {
+      whereClause.departmentId = departmentId;
+    }
+    const offset = (page - 1) * limit;
+    const { rows: users, count } = await User.findAndCountAll({
+      where: whereClause,
+      include: [
+        { model: Department, as: 'department', attributes: ['id', 'name'] },
+      ],
+      attributes: ['id', 'firstname', 'lastname', 'email'],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      order: [['createdAt', 'DESC']],
     });
-    logger.info(`Users fetched successfully`);
-     res.status(200).json(users);
-  }catch(err){
-    console.log(err);
-    res.status(500).json({message:"Server Error",error:err.message})
 
+    logger.info('Users fetched successfully');
+    return res.status(200).json({
+      message: 'Users fetched successfully',
+      totalUsers: count,
+      currentPage: parseInt(page),
+      totalPages: Math.ceil(count / limit),
+      users,
+    });
+
+  } catch (err) {
+    logger.error(`Error fetching users: ${err.message}`);
+    return res.status(500).json({ message: 'Server Error', error: err.message });
   }
-}
+};
+
 
 const getAdmins=async(req,res)=>{
   try{

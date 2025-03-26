@@ -5,7 +5,7 @@ const User = require('../models/User');
 const Department = require('../models/Department');
 const { Sequelize } = require('sequelize');
 const { Op } = require('sequelize');
-
+const emailHelper = require('../utils/emailHelper');
 const createTicket = async (req, res) => {
   try {
     const { title, description, priority, category} = req.body;
@@ -70,7 +70,7 @@ const assignTicket = async (req, res) => {
     }
     ticket.assignedTo = assignedUser.id;
     await ticket.save();
-
+    await emailHelper.ticketAssignedEmail(assignedUser.email, assignedUser.firstname, ticket.id, ticket.title, ticket.description);
     logger.info(`Ticket ${id} assigned to user ${assignedUser.id}`);
     return res.status(200).json({ message: 'Ticket assigned successfully', ticket });
   } catch (error) {
@@ -204,6 +204,66 @@ const updateTicketStatus = async (req, res) => {
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+const getTicketStatusCount = async (req, res) => {
+  try {
+    const totalTickets = await Ticket.count();
+    const openTickets = await Ticket.count({ where: { status: 'Open' } });
+    const closedTickets = await Ticket.count({ where: { status: 'Closed' } });
+    const pendingTickets = await Ticket.count({ where: { status: 'Pending' } });
+    const resolvedTickets = await Ticket.count({ where: { status: 'Resolved' } });
+    const inProgressTickets = await Ticket.count({ where: { status: 'In Progress' } });
+
+    return res.status(200).json({
+      totalTickets,
+      openTickets,
+      closedTickets,
+      pendingTickets,
+      resolvedTickets,
+      inProgressTickets
+    });
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+const updateTicket = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description, priority, category, assignedTo } = req.body;
+
+    const ticket = await Ticket.findByPk(id);
+    if (!ticket) {
+      return res.status(404).json({ message: 'Ticket not found' });
+    }
+    let categoryData = null;
+    if (category) {
+      categoryData = await Category.findOne({ where: { name: category } });
+      if (!categoryData) {
+        return res.status(404).json({ message: 'Category not found' });
+      }
+    }
+    let assignedUser = null;
+    if (assignedTo) {
+      assignedUser = await User.findByPk(assignedTo);
+      if (!assignedUser) {
+        return res.status(404).json({ message: 'Assigned user not found' });
+      }
+    }
+    await ticket.update({
+      title: title || ticket.title,
+      description: description || ticket.description,
+      priority: priority || ticket.priority,
+      categoryId: categoryData ? categoryData.id : ticket.categoryId,
+      assignedTo: assignedUser ? assignedUser.id : ticket.assignedTo,
+    });
+
+    logger.info(`Ticket ${id} updated successfully`);
+    return res.status(200).json({ message: 'Ticket updated successfully', ticket });
+  } catch (error) {
+    logger.error(`Error updating ticket: ${error.message}`);
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
 
 module.exports = {
   createTicket,
@@ -212,4 +272,6 @@ module.exports = {
   getAllTickets,
   getTicketById,
   updateTicketStatus,
+  getTicketStatusCount,
+  updateTicket
 };
