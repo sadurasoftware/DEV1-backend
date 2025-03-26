@@ -6,6 +6,8 @@ const Department = require('../models/Department');
 const { Sequelize } = require('sequelize');
 const { Op } = require('sequelize');
 const emailHelper = require('../utils/emailHelper');
+const fs = require('fs');
+const path = require('path');
 const createTicket = async (req, res) => {
   try {
     const { title, description, priority, category} = req.body;
@@ -70,7 +72,8 @@ const assignTicket = async (req, res) => {
     }
     ticket.assignedTo = assignedUser.id;
     await ticket.save();
-    await emailHelper.ticketAssignedEmail(assignedUser.email, assignedUser.firstname, ticket.id, ticket.title, ticket.description);
+    const ticketUrl = `${process.env.TICKET_ASSIGN_URL}/assigned-ticket/${ticket.id}`
+    await emailHelper.ticketAssignedEmail(assignedUser.email, assignedUser.firstname, ticket.id, ticket.title, ticket.description,ticketUrl);
     logger.info(`Ticket ${id} assigned to user ${assignedUser.id}`);
     return res.status(200).json({ message: 'Ticket assigned successfully', ticket });
   } catch (error) {
@@ -229,7 +232,7 @@ const getTicketStatusCount = async (req, res) => {
 const updateTicket = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, priority, category, assignedTo } = req.body;
+    const { title, description, priority, category} = req.body;
 
     const ticket = await Ticket.findByPk(id);
     if (!ticket) {
@@ -242,25 +245,68 @@ const updateTicket = async (req, res) => {
         return res.status(404).json({ message: 'Category not found' });
       }
     }
-    let assignedUser = null;
-    if (assignedTo) {
-      assignedUser = await User.findByPk(assignedTo);
-      if (!assignedUser) {
-        return res.status(404).json({ message: 'Assigned user not found' });
-      }
-    }
+    // let assignedUser = null;
+    // if (assignedTo) {
+    //   assignedUser = await User.findByPk(assignedTo);
+    //   if (!assignedUser) {
+    //     return res.status(404).json({ message: 'Assigned user not found' });
+    //   }
+    // }
     await ticket.update({
       title: title || ticket.title,
       description: description || ticket.description,
       priority: priority || ticket.priority,
       categoryId: categoryData ? categoryData.id : ticket.categoryId,
-      assignedTo: assignedUser ? assignedUser.id : ticket.assignedTo,
+      // assignedTo: assignedUser ? assignedUser.id : ticket.assignedTo,
     });
 
     logger.info(`Ticket ${id} updated successfully`);
     return res.status(200).json({ message: 'Ticket updated successfully', ticket });
   } catch (error) {
     logger.error(`Error updating ticket: ${error.message}`);
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+const viewTicket = async (req, res) => {
+  try {
+    const { id } = req.params; 
+    const ticket = await Ticket.findByPk(id);
+
+    if (!ticket) {
+      return res.status(404).json({ message: 'Ticket not found' });
+    }
+
+    return res.status(200).json({
+      message: 'Ticket details retrieved successfully',
+      ticket: {
+        id: ticket.id,
+        title: ticket.title,
+        description: ticket.description,
+        priority: ticket.priority,
+        status: ticket.status,
+        assignedTo: ticket.assignedTo,
+        createdAt: ticket.createdAt,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+const deleteTicket = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ticket = await Ticket.findByPk(id);
+    if (!ticket) {
+      return res.status(404).json({ message: 'Ticket not found' });
+    }
+    const ticketFolder = path.join(__dirname, '../uploads', id);
+    if (fs.existsSync(ticketFolder)) {
+      fs.rmSync(ticketFolder, { recursive: true, force: true });
+      console.log(`Deleted folder: ${ticketFolder}`);
+    }
+    await ticket.destroy();
+    return res.status(200).json({ message: 'Ticket deleted successfully' });
+  } catch (error) {
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -273,5 +319,7 @@ module.exports = {
   getTicketById,
   updateTicketStatus,
   getTicketStatusCount,
-  updateTicket
+  updateTicket,
+  viewTicket,
+  deleteTicket
 };

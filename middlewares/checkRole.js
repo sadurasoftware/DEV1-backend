@@ -9,7 +9,7 @@ const checkRole = (...requiredRoles) => {
       }
       const role = await Role.findByPk(user.roleId);
       if (!role || !requiredRoles.includes(role.name)) {
-        return res.status(403).json({ message: `Access denied: Requires role ${requiredRole}.` });
+        return res.status(403).json({ message: `Access denied: Requires role ${requiredRoles}.` });
       }
       next();
     } catch (error) {

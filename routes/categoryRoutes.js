@@ -1,13 +1,14 @@
-// routes/categoryRoutes.js
+
 const express = require('express');
 const router = express.Router();
-//const { authenticateToken } = require('../middlewares/authMiddleware');
-//const { checkPermission } = require('../middlewares/checkRole');
+const { authenticateToken } = require('../middlewares/authMiddleware');
+const { checkRole} = require('../middlewares/checkRole');
 const categoryController = require('../controllers/categoryController');
+const validator=require('../validator/router-validator');
 
-router.post('/create', categoryController.createCategory);
-router.get('/get', categoryController.getCategories);
-router.put('/update/:id',  categoryController.updateCategory);
-router.delete('/delete/:id', categoryController.deleteCategory);
+router.post('/create', authenticateToken,checkRole('superadmin'),validator.createCategorySchemaValidator,categoryController.createCategory);
+router.get('/get',authenticateToken,checkRole('superadmin'), categoryController.getCategories);
+router.put('/update/:id',authenticateToken,checkRole('superadmin'),validator.updateCategorySchemaValidator, categoryController.updateCategory);
+router.delete('/delete/:id',authenticateToken,checkRole('superadmin'),validator.deleteCategorySchemaValidator,categoryController.deleteCategory);
 
 module.exports = router;

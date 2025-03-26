@@ -1,57 +1,64 @@
 const Joi = require('joi');
 
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-
+//register
 const registerSchema = Joi.object({
-  firstname: Joi.string().min(3).required().messages({
-    'string.empty': 'Firstname is required',
-    'string.min': 'Username must be at least 3 characters long',
+  firstname: Joi.string().min(3).max(50).required().messages({
+    'string.empty': `"First name" cannot be empty`,
+    'string.min': `"First name" should have at least {#limit} characters`,
+    'string.max': `"First name" should have at most {#limit} characters`,
+    'any.required': `"First name" is required`,
   }),
-  lastname: Joi.string().min(3).required().messages({
-    'string.empty': 'Lastname is required',
-    'string.min': 'Lastname must be at least 3 characters long',
+  lastname: Joi.string().min(3).max(50).required().messages({
+    'string.empty': `"Last name" cannot be empty`,
+    'string.min': `"Last name" should have at least {#limit} characters`,
+    'string.max': `"Last name" should have at most {#limit} characters`,
+    'any.required': `"Last name" is required`,
   }),
-  email: Joi.string().pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/,).required().messages({
-    'string.empty': 'Email is required',
-    'string.email': 'Please provide a valid email',
+  email: Joi.string().email().required().messages({
+    'string.email': `"Email" must be a valid email address`,
+    'string.empty': `"Email" cannot be empty`,
+    'any.required': `"Email" is required`,
   }),
-  password: Joi.string().pattern(passwordRegex).required().messages({
-    'string.empty': 'Password is required',
-    'string.pattern.base':
-      'Password should be a combination of one uppercase, one lowercase, one special character, one digit, and be between 8 and 20 characters long',
+  password: Joi.string().min(6).max(30).required().messages({
+    'string.min': `"Password" should have at least {#limit} characters`,
+    'string.max': `"Password" should have at most {#limit} characters`,
+    'any.required': `"Password" is required`,
   }),
-  // confirmPassword: Joi.string().pattern(passwordRegex).required().messages({
-  //   'string.empty': 'Confirm Password is required',
-  //   'string.pattern.base':
-  //     'Password should be a combination of one uppercase, one lowercase, one special character, one digit, and be between 8 and 20 characters long',
-  // }),
+  terms: Joi.boolean().valid(true).required().messages({
+    'any.only': `"Terms" must be accepted`,
+    'any.required': `"Terms" is required`,
+  }),
   role: Joi.string().required().messages({
-    'string.empty': 'Role is required',
-    'string.base': 'Role must be a valid string',
+    'string.empty': `"Role" cannot be empty`,
+    'any.required': `"Role" is required`,
   }),
-  terms : Joi.boolean().required().messages({
-    'string.empty': 'Terms is required',
-    'string.base': 'Terms must be a valid string',
-  })
+  department: Joi.string().optional().allow(null, '').messages({
+    'string.empty': `"Department" cannot be empty`,
+  }),
 });
-
+//login
 const loginSchema = Joi.object({
-  email: Joi.string().pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/,).required().messages({
+  email: Joi.string().email().required().messages({
     'string.empty': 'Email is required',
-    'string.email': 'Please provide a valid email',
+    'string.email': 'Please provide a valid email address',
+    'any.required': 'Email is required',
   }),
   password: Joi.string().pattern(passwordRegex).required().messages({
     'string.empty': 'Password is required',
+    'string.pattern.base': 'Password must be at least 6 characters long and contain at least one letter and one number',
+    'any.required': 'Password is required',
   }),
 });
 
+//forgetpassword
 const forgetPasswordSchema = Joi.object({
   email: Joi.string().pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/,).required().messages({
     'string.empty': 'Email is required',
     'string.email': 'Please provide a valid email',
   }),
 });
-
+//resetPassword
 const resetPasswordSchema = Joi.object({
   token: Joi.string().required().messages({
     'string.empty': 'Token is required',
@@ -63,7 +70,7 @@ const resetPasswordSchema = Joi.object({
       'Password should be a combination of one uppercase, one lowercase, one special character, one digit, and be between 8 and 20 characters long',
   }),
 });
-
+//changePassword
 const changePasswordSchema = Joi.object({
   oldPassword: Joi.string().pattern(passwordRegex).required().messages({
     'string.empty': 'Please enter your old password',
@@ -74,7 +81,7 @@ const changePasswordSchema = Joi.object({
       'Password should be a combination of one uppercase, one lowercase, one special character, one digit, and be between 8 and 20 characters long',
   }),
 });
-
+//role
 const roleSchema=Joi.object({
   name: Joi.string().min(3).max(50).required().messages({
     'string.empty': 'Role name is required',
@@ -91,7 +98,6 @@ const getRollByIdsSchema=Joi.object({
   }),
 });
 
-
 const deleteRoleSchema=Joi.object({
   roleId: Joi.number().integer().required().messages({
     "number.base": "roleId must be a number.",
@@ -99,7 +105,7 @@ const deleteRoleSchema=Joi.object({
     "any.required": "roleId is required.",
   }),
 });
-
+//module
 const moduleSchema = Joi.object({
   name: Joi.string().min(3).max(50).required().messages({
     'string.empty': 'Module name is required',
@@ -116,7 +122,7 @@ const getModuleByIdSchema=Joi.object({
   }),
 });
 ;
-
+//permission
 const permissionSchema=Joi.object({
   name: Joi.string().min(3).max(50).required().messages({
     'string.empty': 'Permission name is required',
@@ -132,7 +138,7 @@ const getPermissionByIdSchema=Joi.object({
     "any.required": "id is required.",
   }),
 });
-
+//role-module-permission
 const createRoleModulePermissionSchema = Joi.object({
   roleId: Joi.number().integer().required().messages({
     "number.base": "roleId must be a number.",
@@ -212,7 +218,7 @@ const updateModuleSchema = Joi.object({
     'any.required': 'newModuleName is required.',
   }),
 }).or('moduleId', 'moduleName');
-
+//department
 const createDepartmentSchema = Joi.object({
   name: Joi.string().min(3).max(50).required().messages({
     'string.base': `"Name" should be a type of 'text'`,
@@ -241,7 +247,6 @@ const updateDepartmentSchema = Joi.object({
   }),
 });
 
-
 const deleteDepartmentSchema = Joi.object({
   id: Joi.number().integer().required().messages({
     "number.base": "id must be a number.",
@@ -249,7 +254,7 @@ const deleteDepartmentSchema = Joi.object({
     "any.required": "id is required.",
   }),
 });
-
+//user-management
 const createUservalidator = Joi.object({
   firstname: Joi.string().min(3).max(50).required().messages({
     'string.empty': 'Name is required',
@@ -283,6 +288,7 @@ const createUservalidator = Joi.object({
     'any.required': 'terms is required.',
   }),
 })
+
 const updateUservalidator = Joi.object({
   firstname: Joi.string().min(3).max(50).required().messages({
     'string.empty': 'Name is required',
@@ -307,6 +313,7 @@ const updateUservalidator = Joi.object({
     'any.required': 'departmentId is required.',
   }),
 });
+
 const viewUserSchema=Joi.object({
   id: Joi.number().integer().required().messages({
     "number.base": "id must be a number.",
@@ -314,6 +321,7 @@ const viewUserSchema=Joi.object({
     "any.required": "id is required.",
   }),
 });
+
 const deleteUserSchema=Joi.object({
   id: Joi.number().integer().required().messages({
     "number.base": "id must be a number.",
@@ -321,7 +329,152 @@ const deleteUserSchema=Joi.object({
     "any.required": "id is required.",
   }),
 });
+//category
+const createCategorySchema = Joi.object({
+  name: Joi.string().min(3).max(50).required().messages({
+    'string.base': `"Name" should be a type of 'text'`,
+    'string.empty': `"Name" cannot be empty`,
+    'string.min': `"Name" should have at least {#limit} characters`,
+    'string.max': `"Name" should have at most {#limit} characters`,
+    'any.required': `"Name" is required`,
+  }),
+});
 
+const getCategoryByIdSchema = Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "id must be a number.",
+    "number.integer": "id must be an integer.",
+    "any.required": "id is required.",
+  }),
+});
+
+const updateCategorySchema = Joi.object({
+  name: Joi.string().min(3).max(50).required().messages({
+    'string.base': `"Name" should be a type of 'text'`,
+    'string.empty': `"Name" cannot be empty`,
+    'string.min': `"Name" should have at least {#limit} characters`,
+    'string.max': `"Name" should have at most {#limit} characters`,
+    'any.required': `"Name" is required`,
+  }),
+});
+
+const deleteCategorySchema = Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "id must be a number.",
+    "number.integer": "id must be an integer.",
+    "any.required": "id is required.",
+  }),
+});
+
+//ticket
+
+const createTicketSchema = Joi.object({
+  title: Joi.string().min(3).max(50).required().messages({
+    'string.base': `"Title" should be a type of 'text'`,
+    'string.empty': `"Title" cannot be empty`,
+    'string.min': `"Title" should have at least {#limit} characters`,
+    'string.max': `"Title" should have at most {#limit} characters`,
+    'any.required': `"Title" is required`,
+  }),
+  description: Joi.string().min(3).max(50).required().messages({
+    'string.base': `"Description" should be a type of 'text'`,
+    'string.empty': `"Description" cannot be empty`,
+    'string.min': `"Description" should have at least {#limit} characters`,
+    'string.max': `"Description" should have at most {#limit} characters`,
+    'any.required': `"Description" is required`,
+  }),
+  priority: Joi.string()
+  .valid("Low", "Medium", "High")
+  .required()
+  .messages({
+    'any.only': `"Priority" must be one of ["Low", "Medium", "High"]`,
+    'any.required': `"Priority" is required`,
+  }),
+  status: Joi.string()
+  .valid("Open", "In Progress", "Resolved", "Closed", "Pending")
+  .required()
+  .messages({
+    'any.only': `"Status" must be one of ["Open", "In Progress", "Resolved", "Closed", "Pending"]`,
+    'any.required': `"Status" is required`,
+  }),
+  category: Joi.string().min(3).max(50).required().messages({
+  'string.base': `"Category" should be a type of 'text'`,
+  'string.empty': `"Category" cannot be empty`,
+  'string.min': `"Category" should have at least {#limit} characters`,
+  'string.max': `"Category" should have at most {#limit} characters`,
+  'any.required': `"Category" is required`,
+   }),
+});
+const assignTicketSchema = Joi.object({
+  assignedTo: Joi.number().integer().positive().required().messages({
+    'number.base': `"AssignedTo" should be a valid user ID`,
+    'number.integer': `"AssignedTo" must be an integer`,
+    'number.positive': `"AssignedTo" must be a positive number`,
+    'any.required': `"AssignedTo" is required`,
+  })
+});
+const getTicketByIdSchema = Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "id must be a number.",
+    "number.integer": "id must be an integer.",
+    "any.required": "id is required.",
+  }),
+});
+const updateTicketStatusSchema = Joi.object({
+  status: Joi.string()
+    .valid('Open', 'Pending', 'Resolved', 'Closed', 'In Progress')
+    .required()
+    .messages({
+      'any.only': 'Invalid status value. Allowed values: Open, Pending, Resolved, Closed, In Progress',
+      'any.required': 'Status is required',
+    }),
+});
+const updateTicketStatusParamsSchema = Joi.object({
+  id: Joi.number().integer().positive().required().messages({
+    'number.base': 'Ticket ID must be a number',
+    'number.integer': 'Ticket ID must be an integer',
+    'number.positive': 'Ticket ID must be a positive number',
+    'any.required': 'Ticket ID is required',
+  }),
+});
+
+const updateTicketSchema = Joi.object({
+  title: Joi.string().min(3).max(50).optional().messages({
+    'string.base': `"Title" should be a type of 'text'`,
+    'string.empty': `"Title" cannot be empty`,
+    'string.min': `"Title" should have at least {#limit} characters`,
+    'string.max': `"Title" should have at most {#limit} characters`,
+  }),
+  description: Joi.string().min(3).max(1000).optional().messages({
+    'string.base': `"Description" should be a type of 'text'`,
+    'string.empty': `"Description" cannot be empty`,
+    'string.min': `"Description" should have at least {#limit} characters`,
+    'string.max': `"Description" should have at most {#limit} characters`,
+  }),
+  priority: Joi.string().valid("Low", "Medium", "High").optional().messages({
+    'any.only': `"Priority" must be one of ['Low', 'Medium', 'High']`,
+  }),
+  category: Joi.string().min(3).max(50).optional().messages({
+    'string.base': `"Category" should be a type of 'text'`,
+    'string.empty': `"Category" cannot be empty`,
+    'string.min': `"Category" should have at least {#limit} characters`,
+    'string.max': `"Category" should have at most {#limit} characters`,
+  }),
+});
+const viewTicketSchema = Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "id must be a number.",
+    "number.integer": "id must be an integer.",
+    "any.required": "id is required.",
+  }),
+});
+const deleteTicketSchema = Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "id must be a number.",
+    "number.integer": "id must be an integer.",
+    "any.required": "id is required.",
+  }),
+});
 
 const validate = (schema) => (req, res, next) => {
   const { error } = schema.validate(req.body, { abortEarly: false });
@@ -379,5 +532,20 @@ module.exports = {
   createUservalidator: validate(createUservalidator),
   updateUservalidator: validate(updateUservalidator),
   viewUservalidator: validateParams(viewUserSchema),
-  deleteUservalidator: validateParams(deleteUserSchema)
+  deleteUservalidator: validateParams(deleteUserSchema),
+
+  createCategorySchemaValidator: validate(createCategorySchema),
+  getCategoryByIdSchemaValidator: validateParams(getCategoryByIdSchema),
+  updateCategorySchemaValidator: validate(updateCategorySchema),
+  deleteCategorySchemaValidator: validateParams(deleteCategorySchema),
+
+  createTicketSchemaValidator: validate(createTicketSchema),
+  assignTicketSchemaValidator: validate(assignTicketSchema),
+  getTicketByIdSchemaValidator: validateParams(getTicketByIdSchema),
+  updateTicketSchemaValidator: validateParams(updateTicketSchema),
+  viewTicketSchemaValidator: validateParams(viewTicketSchema),
+  deleteTicketSchemaValidator: validateParams(deleteTicketSchema),
+
+  updateTicketStatusSchemaValidator: validate(updateTicketStatusSchema),
+  updateTicketStatusParamsSchemaValidator: validateParams(updateTicketStatusParamsSchema),
 };
