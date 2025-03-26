@@ -63,7 +63,7 @@ const register = async (req, res) => {
       terms,
     });
     const tokenPayload = { id: newUser.id, email: newUser.email, firstname: newUser.firstname, lastname: newUser.lastname };
-    const token = jwtHelper.generateToken(tokenPayload, process.env.JWT_SECRET, '2m');
+    const token = jwtHelper.generateToken(tokenPayload, process.env.JWT_SECRET, '10m');
     const verificationUrl = `${process.env.VERIFICATION_URL}/verify-email/${token}`;
     await emailHelper.verificationEmail(email, verificationUrl, firstname);
     logger.info(`User registered successfully: ${email}`);

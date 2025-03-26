@@ -1,6 +1,6 @@
 const Role = require('../models/Role');
 const{ Module,Permission,RoleModulePermission} = require('../models');
-const checkRole = (requiredRole) => {
+const checkRole = (...requiredRoles) => {
   return async (req, res, next) => {
     try {
       const { user } = req; 
@@ -8,7 +8,7 @@ const checkRole = (requiredRole) => {
         return res.status(403).json({ message: 'Unauthorized: No role information found.' });
       }
       const role = await Role.findByPk(user.roleId);
-      if (!role || role.name !== requiredRole) {
+      if (!role || !requiredRoles.includes(role.name)) {
         return res.status(403).json({ message: `Access denied: Requires role ${requiredRole}.` });
       }
       next();
