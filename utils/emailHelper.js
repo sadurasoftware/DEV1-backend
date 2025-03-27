@@ -43,7 +43,7 @@ const forgotPasswordEmail = async(to, url, username)=>{
     console.log(url)
 }
 
-const ticketAssignedEmail = async (to, firstname, ticketId, title, description) => {
+const ticketAssignedEmail = async (to, firstname, ticketId, title, description,ticketUrl) => {
     try {
         await transporter.sendMail({
             from: process.env.APP_EMAIL,
@@ -57,7 +57,7 @@ const ticketAssignedEmail = async (to, firstname, ticketId, title, description) 
                 <p style="font-size: 16px; color: #333;"><strong>Title:</strong> ${title}</p>
                 <p style="font-size: 16px; color: #333;"><strong>Description:</strong> ${description}</p>
                 <p style="text-align: left;">
-                    <a href="http://yourapp.com/tickets/${ticketId}" style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">View Ticket</a>
+                    <a href="${ticketUrl}" style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">View Ticket</a>
                 </p>
                 <p style="font-size: 16px; color: #333;">Please take necessary actions as soon as possible.</p>
             </div>`

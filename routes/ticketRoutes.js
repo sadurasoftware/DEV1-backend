@@ -11,5 +11,7 @@ router.get('/get-all-tickets',ticketController.getAllTickets);
 router.get('/get-ticket/:id',ticketController.getTicketById);
 router.put('/update-ticket-status/:id',ticketController.updateTicketStatus);
 router.get('/tickets-status-count', ticketController.getTicketStatusCount);
-
+router.get('/view-ticket/:id', ticketController.viewTicket);
+router.put('/update-ticket/:id', authenticateToken,ticketController.updateTicket);
+router.delete('/delete-ticket/:id', authenticateToken,ticketController.deleteTicket);
 module.exports = router;

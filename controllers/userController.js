@@ -246,60 +246,35 @@ async function updateAdmin(req, res) {
     return res.status(500).json({ message: 'Server error' });
   }
 }
-async function viewUser(req, res) {
+const viewUser = async (req, res) => {
   try {
     const { id } = req.params;
-    logger.info(`User ${req.user.id} attempting to view user: ${id}`);
-
+    const userId = req.user.id; 
+    logger.info(`User ${userId} attempting to view user: ${id}`);
     const user = await User.findByPk(id, {
-      attributes: ['id', 'firstname', 'lastname', 'email', 'departmentId', 'roleId'],
+      attributes: ["id", "firstname", "lastname", "email", "departmentId", "roleId"],
       include: [
-        { model: Role, as: 'role', attributes: ['name'] },
-        { model: Department, as: 'department', attributes: ['name'] },
+        { model: Role, as: "role", attributes: ["name"] },
+        { model: Department, as: "department", attributes: ["name"] },
       ],
     });
 
     if (!user) {
       logger.warn(`User not found: ${id}`);
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    const module = await Module.findOne({ where: { name: 'User' } });
-    if (!module) {
-      logger.warn('Module not found');
-      return res.status(400).json({ message: 'Module not found' });
-    }
-
-    const permission = await Permission.findOne({ where: { name: 'read' } });
-    if (!permission) {
-      logger.warn('Permission not found');
-      return res.status(400).json({ message: 'Permission not found' });
-    }
-
-    const rolePermission = await RoleModulePermission.findOne({
-      where: {
-        roleId: req.user.roleId,
-        moduleId: module.id,
-        permissionId: permission.id,
-        status: true,
-      },
+    logger.info(`User ${id} viewed successfully by user ${userId}`);
+    return res.status(200).json({
+      message: "User details fetched successfully",
+      userData: user,
     });
 
-    if (!rolePermission && req.user.id !== parseInt(id)) {
-      logger.warn(`Unauthorized attempt by user ${req.user.id} to view user ${id}`);
-      return res.status(403).json({ message: 'You are not authorized to view this user.' });
-    }
-
-    logger.info(`User ${id} viewed successfully by user ${req.user.id}`);
-    return res.status(200).json({ message: 'User details fetched successfully', userData: user });
   } catch (error) {
     logger.error(`Error viewing user: ${error.message}`);
-    return res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: "Server error" });
   }
-}
-
-
-
+};
 async function deleteUser(req, res) {
   try {
     const { id } = req.params;
