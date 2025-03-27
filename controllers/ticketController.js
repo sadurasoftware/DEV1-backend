@@ -54,7 +54,7 @@ const assignTicket = async (req, res) => {
     const supportDept = await Department.findOne({
       where: Sequelize.where(
         Sequelize.fn('LOWER', Sequelize.fn('TRIM', Sequelize.col('name'))),
-        'support team'
+        'support team department'
       )
     });
     if (!supportDept) {
@@ -87,7 +87,7 @@ const getSupportTeamUsers = async (req, res) => {
     const supportDepartment = await Department.findOne({
       where: Sequelize.where(
         Sequelize.fn('LOWER', Sequelize.fn('TRIM', Sequelize.col('name'))),
-        'support team'
+        'support team department'
       )
     });
     if (!supportDepartment) {

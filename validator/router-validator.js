@@ -9,13 +9,13 @@ const registerSchema = Joi.object({
     'string.max': `"First name" should have at most {#limit} characters`,
     'any.required': `"First name" is required`,
   }),
-  lastname: Joi.string().min(3).max(50).required().messages({
+  lastname: Joi.string().min(1).max(50).required().messages({
     'string.empty': `"Last name" cannot be empty`,
     'string.min': `"Last name" should have at least {#limit} characters`,
     'string.max': `"Last name" should have at most {#limit} characters`,
     'any.required': `"Last name" is required`,
   }),
-  email: Joi.string().email().required().messages({
+  email: Joi.string().email().pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/,).required().messages({
     'string.email': `"Email" must be a valid email address`,
     'string.empty': `"Email" cannot be empty`,
     'any.required': `"Email" is required`,
@@ -39,7 +39,7 @@ const registerSchema = Joi.object({
 });
 //login
 const loginSchema = Joi.object({
-  email: Joi.string().email().required().messages({
+  email: Joi.string().pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/,).required().messages({
     'string.empty': 'Email is required',
     'string.email': 'Please provide a valid email address',
     'any.required': 'Email is required',
@@ -266,7 +266,7 @@ const createUservalidator = Joi.object({
     'string.min': 'lastname must be at least 1 characters long',
     'string.max': 'Name must not exceed 50 characters',
   }),
-  email: Joi.string().email().required().messages({
+  email: Joi.string().pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/,).required().messages({
     'string.empty': 'Email is required',
     'string.email': 'Invalid email format',
   }),
@@ -300,7 +300,7 @@ const updateUservalidator = Joi.object({
     'string.min': 'lastname must be at least 1 characters long',
     'string.max': 'Name must not exceed 50 characters',
   }),
-  email: Joi.string().email().required().messages({
+  email: Joi.string().pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/,).required().messages({
     'string.empty': 'Email is required',
     'string.email': 'Invalid email format',
   }),
@@ -407,18 +407,30 @@ const createTicketSchema = Joi.object({
 });
 const assignTicketSchema = Joi.object({
   assignedTo: Joi.number().integer().positive().required().messages({
-    'number.base': `"AssignedTo" should be a valid user ID`,
-    'number.integer': `"AssignedTo" must be an integer`,
-    'number.positive': `"AssignedTo" must be a positive number`,
-    'any.required': `"AssignedTo" is required`,
+    'number.base': `"assignedTo" should be a valid user ID`,
+    'number.integer': `"assignedTo" must be an integer`,
+    'number.positive': `"assignedTo" must be a positive number`,
+    'any.required': `"assignedTo" is required`,
   })
 });
+
+const assignTicketParamsSchema = Joi.object({
+  id: Joi.string()
+    .guid({ version: ['uuidv4', 'uuidv5'] }) 
+    .required()
+    .messages({
+      "string.guid": `"id" must be a valid UUID`,
+      "any.required": `"id" is required`,
+    }),
+});
 const getTicketByIdSchema = Joi.object({
-  id: Joi.number().integer().required().messages({
-    "number.base": "id must be a number.",
-    "number.integer": "id must be an integer.",
-    "any.required": "id is required.",
-  }),
+  id: Joi.string()
+    .guid({ version: ['uuidv4', 'uuidv5'] }) 
+    .required()
+    .messages({
+      "string.guid": "ID must be a valid UUID.",
+      "any.required": "ID is required.",
+    }),
 });
 const updateTicketStatusSchema = Joi.object({
   status: Joi.string()
@@ -430,14 +442,24 @@ const updateTicketStatusSchema = Joi.object({
     }),
 });
 const updateTicketStatusParamsSchema = Joi.object({
-  id: Joi.number().integer().positive().required().messages({
-    'number.base': 'Ticket ID must be a number',
-    'number.integer': 'Ticket ID must be an integer',
-    'number.positive': 'Ticket ID must be a positive number',
-    'any.required': 'Ticket ID is required',
-  }),
+  id: Joi.string()
+    .guid({ version: ['uuidv4', 'uuidv5'] }) 
+    .required()
+    .messages({
+      "string.guid": "ID must be a valid UUID.",
+      "any.required": "ID is required.",
+    }),
 });
 
+const updateTicketParamsSchema = Joi.object({
+  id: Joi.string()
+    .guid({ version: ['uuidv4', 'uuidv5'] }) 
+    .required()
+    .messages({
+      "string.guid": "ID must be a valid UUID.",
+      "any.required": "ID is required.",
+    }),
+});
 const updateTicketSchema = Joi.object({
   title: Joi.string().min(3).max(50).optional().messages({
     'string.base': `"Title" should be a type of 'text'`,
@@ -462,18 +484,22 @@ const updateTicketSchema = Joi.object({
   }),
 });
 const viewTicketSchema = Joi.object({
-  id: Joi.number().integer().required().messages({
-    "number.base": "id must be a number.",
-    "number.integer": "id must be an integer.",
-    "any.required": "id is required.",
-  }),
+  id: Joi.string()
+    .guid({ version: ['uuidv4', 'uuidv5'] }) 
+    .required()
+    .messages({
+      "string.guid": "ID must be a valid UUID.",
+      "any.required": "ID is required.",
+    }),
 });
 const deleteTicketSchema = Joi.object({
-  id: Joi.number().integer().required().messages({
-    "number.base": "id must be a number.",
-    "number.integer": "id must be an integer.",
-    "any.required": "id is required.",
-  }),
+  id: Joi.string()
+    .guid({ version: ['uuidv4', 'uuidv5'] }) 
+    .required()
+    .messages({
+      "string.guid": "ID must be a valid UUID.",
+      "any.required": "ID is required.",
+    }),
 });
 
 const validate = (schema) => (req, res, next) => {
@@ -540,12 +566,18 @@ module.exports = {
   deleteCategorySchemaValidator: validateParams(deleteCategorySchema),
 
   createTicketSchemaValidator: validate(createTicketSchema),
+  assignTicketParamsSchemaValidator: validateParams(assignTicketParamsSchema),
+
   assignTicketSchemaValidator: validate(assignTicketSchema),
   getTicketByIdSchemaValidator: validateParams(getTicketByIdSchema),
+
+  updateTicketParamsSchemaValidator: validateParams(updateTicketParamsSchema),
   updateTicketSchemaValidator: validateParams(updateTicketSchema),
+
   viewTicketSchemaValidator: validateParams(viewTicketSchema),
   deleteTicketSchemaValidator: validateParams(deleteTicketSchema),
 
   updateTicketStatusSchemaValidator: validate(updateTicketStatusSchema),
   updateTicketStatusParamsSchemaValidator: validateParams(updateTicketStatusParamsSchema),
+  deleteTicketSchemaValidator: validateParams(deleteTicketSchema),
 };
