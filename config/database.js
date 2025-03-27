@@ -11,7 +11,7 @@
 const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
-const sequelize = new Sequelize('dev-db', 'root', 'Balak5577@', {
+const sequelize = new Sequelize('dev-db', 'root', 'root@123', {
   host: 'localhost',
   dialect: 'mysql',
   logging: console.log, 
