@@ -11,7 +11,7 @@ router.get('/admins', userController.getAdmins)
 router.get('/', userController.getUsers)
 router.get('/:id', userController.getUser);
 router.get('/:id', userController.fetchUserData);
-router.put('/update/:id',authenticateToken,checkPermission("User","update"),validator.updateUservalidator,userController.updateUser);
+router.put('/update/:id',authenticateToken,checkPermission("User","write"),validator.updateUservalidator,userController.updateUser);
 router.get('/:id', userController.getAdmin);
 router.get('/:id', userController.fetchAdminData);
 router.put('/:id', userController.updateAdmin);
