@@ -10,11 +10,11 @@ const fs = require('fs');
 const path = require('path');
 const createTicket = async (req, res) => {
   try {
-    const { title, description, priority, category} = req.body;
+    const { title, description, priority, category, status} = req.body;
     const createdBy = req.user.id; 
     const ticketId = req.ticketId; 
 
-    if (!title || !description || !priority || !category) {
+    if (!title || !description || !priority || !category || !status) {
       logger.warn('Missing required fields');
       return res.status(400).json({ message: 'All fields are required' });
     }
@@ -33,7 +33,8 @@ const createTicket = async (req, res) => {
       priority,
       categoryId: categoryData.id,
       createdBy,
-      assignedTo: null
+      assignedTo:null,
+      status
     });
 
     logger.info(`Ticket created successfully: ${ticketId}`);
