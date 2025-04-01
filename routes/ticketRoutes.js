@@ -18,4 +18,6 @@ router.get('/tickets-status-count',ticketController.getTicketStatusCount);
 router.get('/view-ticket/:id',validator.viewTicketSchemaValidator, ticketController.viewTicket);
 router.put('/update-ticket/:id',validator.updateTicketParamsSchemaValidator,validator.updateTicketSchemaValidator,authenticateToken,ticketController.updateTicket);
 router.delete('/delete-ticket/:id',validator.deleteTicketSchemaValidator, authenticateToken,ticketController.deleteTicket);
+router.get('/export', ticketController.exportTickets);
+
 module.exports = router;
