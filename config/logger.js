@@ -20,7 +20,7 @@ require('winston-daily-rotate-file');
     //          level: 'info',
     //      }),
     //      new winston.transports.DailyRotateFile({
-    //          filename: 'logs/error-%DATE%.log',
+    //          filename: 'logs/error-%DATE%.log',git 
     //          datePattern: 'YYYY-MM-DD',
     //          level: 'error',
     //          maxSize: '20m',
