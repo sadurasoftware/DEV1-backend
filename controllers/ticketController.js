@@ -6,6 +6,9 @@ const Department = require('../models/Department');
 const { Sequelize } = require('sequelize');
 const { Op } = require('sequelize');
 const emailHelper = require('../utils/emailHelper');
+const { Parser } = require('json2csv'); 
+const ExcelJS = require('exceljs'); 
+const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
 const createTicket = async (req, res) => {
@@ -424,7 +427,106 @@ const deleteTicket = async (req, res) => {
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+const generateUniqueFilePath = (dir, baseName, extension) => {
+  let filePath = path.join(dir, `${baseName}.${extension}`);
+  let counter = 1;
+  while (fs.existsSync(filePath)) {
+    filePath = path.join(dir, `${baseName}(${counter}).${extension}`);
+    counter++;
+  }
+  return filePath;
+};
+const exportTickets = async (req, res) => {
+  try {
+    const { format } = req.query; 
+    if (!['csv', 'excel', 'pdf'].includes(format)) {
+      return res.status(400).json({ message: 'Invalid format. Use csv, excel, or pdf' });
+    }
 
+    const exportDir = path.join(__dirname, '../exports');
+    if (!fs.existsSync(exportDir)) {
+      fs.mkdirSync(exportDir, { recursive: true });
+    }
+    const tickets = await Ticket.findAll({
+      include: [
+        { model: User, as: 'user', attributes: ['firstname', 'email'] },  
+        { model: User, as: 'assignedUser', attributes: ['firstname', 'email'] }, 
+        { model: Category, as: 'category', attributes: ['name'] }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+    if (!tickets.length) {
+      return res.status(404).json({ message: 'No tickets found' });
+    }
+    const data = tickets.map(ticket => ({
+      ID: ticket.id,
+      Title: ticket.title,
+      Description: ticket.description,
+      Status: ticket.status,
+      Priority: ticket.priority,
+      Category: ticket.category?.name || 'N/A',
+      CreatedBy: ticket.user ? `${ticket.user.firstname} (${ticket.user.email})` : 'N/A',
+      AssignedTo: ticket.assignedUser ? `${ticket.assignedUser.firstname} (${ticket.assignedUser.email})` : 'Unassigned',
+      CreatedAt: ticket.createdAt,
+      UpdatedAt: ticket.updatedAt
+    }));
+    let filePath;
+
+    if (format === 'csv') {
+      filePath = generateUniqueFilePath(exportDir, 'tickets', 'csv');
+      const parser = new Parser();
+      fs.writeFileSync(filePath, parser.parse(data));
+    } else if (format === 'excel') {
+      filePath = generateUniqueFilePath(exportDir, 'tickets', 'xlsx');
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Tickets');
+      worksheet.columns = [
+        { header: 'ID', key: 'ID' },
+        { header: 'Title', key: 'Title' },
+        { header: 'Description', key: 'Description' },
+        { header: 'Status', key: 'Status' },
+        { header: 'Priority', key: 'Priority' },
+        { header: 'Category', key: 'Category' },
+        { header: 'Created By', key: 'CreatedBy' },
+        { header: 'Assigned To', key: 'AssignedTo' },
+        { header: 'Created At', key: 'CreatedAt' },
+        { header: 'Updated At', key: 'UpdatedAt' }
+      ];
+      worksheet.addRows(data);
+      await workbook.xlsx.writeFile(filePath);
+    } else if (format === 'pdf') {
+      filePath = generateUniqueFilePath(exportDir, 'tickets', 'pdf');
+      const doc = new PDFDocument();
+      doc.pipe(fs.createWriteStream(filePath));
+      doc.fontSize(20).text('Ticket Report', { align: 'center' });
+      doc.moveDown();
+      data.forEach(ticket => {
+        doc.fontSize(12).text(`ID: ${ticket.ID}`);
+        doc.text(`Title: ${ticket.Title}`);
+        doc.text(`Description: ${ticket.Description}`);
+        doc.text(`Status: ${ticket.Status}`);
+        doc.text(`Priority: ${ticket.Priority}`);
+        doc.text(`Category: ${ticket.Category}`);
+        doc.text(`Created By: ${ticket.CreatedBy}`);
+        doc.text(`Assigned To: ${ticket.AssignedTo}`);
+        doc.text(`Created At: ${ticket.CreatedAt}`);
+        doc.text(`Updated At: ${ticket.UpdatedAt}`);
+        doc.moveDown();
+      });
+      doc.end();
+    }
+
+    return res.status(200).json({
+      message: `Tickets exported successfully in ${format} format`,
+      file: filePath
+    });
+
+  } catch (error) {
+    console.error('Error exporting tickets:', error.message);
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
 module.exports = {
   createTicket,
   assignTicket,
@@ -438,5 +540,6 @@ module.exports = {
   getTicketStatusCount,
   updateTicket,
   viewTicket,
-  deleteTicket
+  deleteTicket,
+  exportTickets
 };
