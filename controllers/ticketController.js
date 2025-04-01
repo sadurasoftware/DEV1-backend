@@ -108,6 +108,108 @@ const getSupportTeamUsers = async (req, res) => {
   }
 };
 
+// const getTickets = async (req, res) => {
+//   try {
+//     const userId = req.user.id; 
+
+//     const user = await User.findByPk(userId, {
+//       include: { model: Department, as: 'department' }
+//     });
+
+//     if (!user) {
+//       return res.status(404).json({ message: 'User not found' });
+//     }
+
+//     let tickets;
+
+//     if (user.department?.name.toLowerCase().trim() === 'support team department') {
+//       tickets = await Ticket.findAll({
+//         include: [
+//           { model: User, as: 'user', attributes: ['id', 'firstname', 'email'] },
+//           { model: User, as: 'assignedUser', attributes: ['id', 'firstname', 'email'] },
+//           { model: Category, as: 'category', attributes: ['id', 'name'] }
+//         ],
+//         order: [['createdAt', 'DESC']]
+//       });
+//     } else {
+//       tickets = await Ticket.findAll({
+//         where: { createdBy: userId },
+//         include: [
+//           { model: User, as: 'user', attributes: ['id', 'firstname', 'email'] },
+//           { model: User, as: 'assignedUser', attributes: ['id', 'firstname', 'email'] },
+//           { model: Category, as: 'category', attributes: ['id', 'name'] }
+//         ],
+//         order: [['createdAt', 'DESC']]
+//       });
+//     }
+
+//     return res.status(200).json({ tickets });
+//   } catch (error) {
+//     console.error('Error fetching tickets:', error.message);
+//     return res.status(500).json({ message: 'Server error', error: error.message });
+//   }
+// };
+const getTicketsByUser = async (req, res) => {
+  try {
+    const { userId } = req.params; 
+    const targetUser = await User.findByPk(userId);
+    if (!targetUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const tickets = await Ticket.findAll({
+      where: { createdBy: userId },
+      include: [
+        { model: User, as: 'user', attributes: ['id', 'firstname', 'email'] },  
+        { model: User, as: 'assignedUser', attributes: ['id', 'firstname', 'email'] }, 
+        { model: Category, as: 'category', attributes: ['id', 'name'] }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+    return res.status(200).json({ tickets });
+
+  } catch (error) {
+    console.error('Error fetching user-created tickets:', error.message);
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+const getSolvedTicketsByUser = async (req, res) => {
+  try {
+    const { userId } = req.params; 
+    const user = await User.findOne({
+      where: { id: userId },
+      include: [{ model: Department, as: 'department', attributes: ['name'] }]
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (!user.department || user.department.name.toLowerCase().trim() !== 'support team department') {
+      return res.status(403).json({ message: 'User is not part of the Support Team' });
+    }
+
+    const solvedTicketCount = await Ticket.count({
+      where: {
+        assignedTo: userId,
+        status: ['Resolved'] 
+      }
+    });
+
+    return res.status(200).json({
+      userId,
+      solvedTickets: solvedTicketCount
+    });
+
+  } catch (error) {
+    console.error('Error fetching solved tickets count:', error.message);
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+
+
 const getAllTickets = async (req, res) => {
   try {
     const { status, priority, page = 1, limit = 10, search = '' } = req.query;
@@ -191,20 +293,31 @@ const updateTicketStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
+    const userId = req.user.id; 
 
-    const allowedStatuses = ['Open', 'Pending', 'Resolved', 'Closed','In Progress'];
+    const allowedStatuses = ['Open', 'Pending', 'Resolved', 'Closed', 'In Progress'];
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({ message: 'Invalid status value' });
     }
 
     const ticket = await Ticket.findByPk(id);
     if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
+    const user = await User.findByPk(userId, { 
+      include: { model: Department, as: 'department' } 
+    });
 
+    if (!user || !user.department) {
+      return res.status(403).json({ message: 'Unauthorized: User not in any department' });
+    }
+    if (user.department.name.toLowerCase().trim() !== 'support team department') {
+      return res.status(403).json({ message: 'Unauthorized: Only Support Team can update status' });
+    }
     ticket.status = status;
     await ticket.save();
-
     return res.status(200).json({ message: 'Status updated', ticket });
+
   } catch (error) {
+    console.error('Error updating ticket status:', error.message);
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -316,6 +429,9 @@ module.exports = {
   createTicket,
   assignTicket,
   getSupportTeamUsers,
+  //getTickets,
+  getTicketsByUser,
+  getSolvedTicketsByUser,
   getAllTickets,
   getTicketById,
   updateTicketStatus,
