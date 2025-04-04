@@ -4,6 +4,7 @@ const morgan = require('morgan');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
+const path = require('path');
 const helmet = require('helmet');
 const { apiLimiter } = require('./middlewares/rateLimit');
 const logger = require('./config/logger');
@@ -37,12 +38,12 @@ app.use(
     },
   })
 );
-
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(morgan('tiny'));  
 app.use(helmet());  
 const corsOptions = {
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  origin: 'http://localhost:5173',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   credentials: true,  // Allow cookies and authorization headers to be included
 };
 

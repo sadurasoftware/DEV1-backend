@@ -275,7 +275,7 @@ const getTicketById = async (req, res) => {
         {
           model: User,
           as: 'user',  
-          attributes: ['id', 'firstname']
+          attributes: ['id', 'firstname', 'email']
         },
         {
           model: User,
@@ -350,7 +350,6 @@ const updateTicket = async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, priority, category} = req.body;
-
     const ticket = await Ticket.findByPk(id);
     if (!ticket) {
       return res.status(404).json({ message: 'Ticket not found' });
