@@ -11,13 +11,19 @@ const ExcelJS = require('exceljs');
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
+const downloadsDir = path.join(os.homedir(), 'Downloads');
+const { v4: uuidv4 } = require('uuid');
+
+
 const createTicket = async (req, res) => {
   try {
-    const { title, description, priority, category, status} = req.body;
-    const createdBy = req.user.id; 
-    const ticketId = req.ticketId; 
-
-    if (!title || !description || !priority || !category || !status) {
+    // const ticketId = uuidv4();
+    // req.ticketId = ticketId;
+    const { title, description, priority, category} = req.body;
+    const createdBy = req.user.id;
+    const ticketId = req.ticketId || uuidv4();
+    if (!title || !description || !priority || !category) {
       logger.warn('Missing required fields');
       return res.status(400).json({ message: 'All fields are required' });
     }
@@ -26,8 +32,19 @@ const createTicket = async (req, res) => {
       logger.warn(`Category not found: ${category}`);
       return res.status(404).json({ message: 'Category not found' });
     }
-
-    const attachment = req.file ? req.file.filename : null;
+    // let attachmentUrl = null;
+    // if (req.file) {
+    //   attachmentUrl = await uploadToS3(
+    //     req.file.buffer,
+    //     ticketId,
+    //     req.file.originalname,
+    //     req.file.mimetype
+    //   );
+    // }
+    let attachment = null;
+    if (req.file && req.file.key) {
+      attachment = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${req.file.key}`;
+    }
     const ticket = await Ticket.create({
       id: ticketId,
       title,
@@ -37,7 +54,6 @@ const createTicket = async (req, res) => {
       categoryId: categoryData.id,
       createdBy,
       assignedTo:null,
-      status
     });
 
     logger.info(`Ticket created successfully: ${ticketId}`);
@@ -47,6 +63,28 @@ const createTicket = async (req, res) => {
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
+const getImage = async (req, res) => {
+  try {
+    const { ticketId, filename } = req.params;
+
+    if (!ticketId || !filename) {
+      return res.status(400).json({ message: 'ticketId and filename are required' });
+    }
+
+    const bucketName = process.env.S3_BUCKET_NAME;
+    const region = process.env.AWS_REGION;
+
+    const key = `${ticketId}/${filename}`;
+    const imageUrl = `https://${bucketName}.s3.${region}.amazonaws.com/${key}`;
+
+    return res.status(200).json({ imageUrl });
+  } catch (error) {
+    console.error('Error generating image URL:', error);
+    return res.status(500).json({ message: 'Failed to get image', error: error.message });
+  }
+};
+
 const assignTicket = async (req, res) => {
   try {
     const { id } = req.params;
@@ -350,7 +388,7 @@ const updateTicket = async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, priority, category} = req.body;
-
+    console.log('req.body', req.body);
     const ticket = await Ticket.findByPk(id);
     if (!ticket) {
       return res.status(404).json({ message: 'Ticket not found' });
@@ -438,19 +476,19 @@ const generateUniqueFilePath = (dir, baseName, extension) => {
 };
 const exportTickets = async (req, res) => {
   try {
-    const { format } = req.query; 
+    const { format } = req.query;
     if (!['csv', 'excel', 'pdf'].includes(format)) {
       return res.status(400).json({ message: 'Invalid format. Use csv, excel, or pdf' });
     }
 
-    const exportDir = path.join(__dirname, '../exports');
-    if (!fs.existsSync(exportDir)) {
-      fs.mkdirSync(exportDir, { recursive: true });
+    if (!fs.existsSync(downloadsDir)) {
+      fs.mkdirSync(downloadsDir, { recursive: true });
     }
+
     const tickets = await Ticket.findAll({
       include: [
-        { model: User, as: 'user', attributes: ['firstname', 'email'] },  
-        { model: User, as: 'assignedUser', attributes: ['firstname', 'email'] }, 
+        { model: User, as: 'user', attributes: ['firstname', 'email'] },
+        { model: User, as: 'assignedUser', attributes: ['firstname', 'email'] },
         { model: Category, as: 'category', attributes: ['name'] }
       ],
       order: [['createdAt', 'DESC']]
@@ -459,6 +497,7 @@ const exportTickets = async (req, res) => {
     if (!tickets.length) {
       return res.status(404).json({ message: 'No tickets found' });
     }
+
     const data = tickets.map(ticket => ({
       ID: ticket.id,
       Title: ticket.title,
@@ -471,16 +510,18 @@ const exportTickets = async (req, res) => {
       CreatedAt: ticket.createdAt,
       UpdatedAt: ticket.updatedAt
     }));
+
     let filePath;
 
     if (format === 'csv') {
-      filePath = generateUniqueFilePath(exportDir, 'tickets', 'csv');
+      filePath = generateUniqueFilePath(downloadsDir, 'tickets', 'csv');
       const parser = new Parser();
       fs.writeFileSync(filePath, parser.parse(data));
     } else if (format === 'excel') {
-      filePath = generateUniqueFilePath(exportDir, 'tickets', 'xlsx');
+      filePath = generateUniqueFilePath(downloadsDir, 'tickets', 'xlsx');
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Tickets');
+
       worksheet.columns = [
         { header: 'ID', key: 'ID' },
         { header: 'Title', key: 'Title' },
@@ -493,14 +534,17 @@ const exportTickets = async (req, res) => {
         { header: 'Created At', key: 'CreatedAt' },
         { header: 'Updated At', key: 'UpdatedAt' }
       ];
+
       worksheet.addRows(data);
       await workbook.xlsx.writeFile(filePath);
     } else if (format === 'pdf') {
-      filePath = generateUniqueFilePath(exportDir, 'tickets', 'pdf');
+      filePath = generateUniqueFilePath(downloadsDir, 'tickets', 'pdf');
       const doc = new PDFDocument();
       doc.pipe(fs.createWriteStream(filePath));
+
       doc.fontSize(20).text('Ticket Report', { align: 'center' });
       doc.moveDown();
+
       data.forEach(ticket => {
         doc.fontSize(12).text(`ID: ${ticket.ID}`);
         doc.text(`Title: ${ticket.Title}`);
@@ -514,6 +558,7 @@ const exportTickets = async (req, res) => {
         doc.text(`Updated At: ${ticket.UpdatedAt}`);
         doc.moveDown();
       });
+
       doc.end();
     }
 
@@ -527,6 +572,49 @@ const exportTickets = async (req, res) => {
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
+const updateCategory = async (req, res) => {
+  try {
+    const { id } = req.params; 
+    const { categoryName } = req.body; 
+    const category = await Category.findByPk(id);
+    if (!category) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+
+    category.name = categoryName;
+    await category.save();
+
+    await Ticket.update(
+      { categoryId: category.id }, 
+      { where: { categoryId: id } }
+    );
+
+    return res.status(200).json({
+      message: 'Category and related tickets updated successfully',
+      categoryId: category.id,
+      categoryName: category.name
+    });
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+const deleteCategory = async (req, res) => {
+  try {
+    const { id } = req.params; 
+    const category = await Category.findByPk(id);
+    if (!category) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+    await Ticket.destroy({ where: { categoryId: id } });
+    await category.destroy();
+
+    return res.status(200).json({ message: 'Category and related tickets deleted successfully' });
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 module.exports = {
   createTicket,
   assignTicket,
@@ -541,5 +629,9 @@ module.exports = {
   updateTicket,
   viewTicket,
   deleteTicket,
-  exportTickets
+  exportTickets,
+  getImage,
+
+  updateCategory,
+  deleteCategory
 };
