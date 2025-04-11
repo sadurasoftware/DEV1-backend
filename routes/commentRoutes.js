@@ -9,5 +9,7 @@ const setTicketId = (req, res, next) => {
     next();
   };
 router.post('/:ticketId', authenticateToken, setTicketId,upload.single('attachment'), commentController.addComment);
-
+router.put('/update/:id', authenticateToken, commentController.updateComment);
+router.get('/get/:ticketId',commentController.getTicketComments);
+router.delete('/delete/:commentId', authenticateToken,commentController.deleteComment);
 module.exports = router;

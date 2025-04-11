@@ -17,8 +17,6 @@ const handleError = (res, error, message) => {
 const register = async (req, res) => {
   try {
     const { firstname, lastname, email, password, terms, role, department } = req.body;
-    console.log(req.body); 
-
     // if (password !== confirmPassword) {
     //   logger.warn(`Passwords do not match during registration: ${email}`);
     //   return res.status(400).json({ message: 'Passwords do not match' });
