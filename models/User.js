@@ -32,7 +32,7 @@ User.associate = models => {
     foreignKey: 'assignedTo',
     as: 'assignedTickets',
   });
-  User.hasMany(models.Ticket, {
+  User.hasMany(models.Comment, {
     foreignKey: 'updatedBy',
     as: 'commentedTickets',
   });

@@ -1,5 +1,6 @@
 const {
   S3Client,
+  DeleteObjectCommand,
   HeadObjectCommand,
   ListObjectsV2Command,
   DeleteObjectsCommand
@@ -55,7 +56,7 @@ const getImageUrl = async (ticketId, filename) => {
     Key: key,
   });
 
-  await s3.send(headCommand); // Throws error if file not found
+  await s3.send(headCommand);
 
   return `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
 };
@@ -64,7 +65,7 @@ const deleteS3Folder = async (ticketId) => {
   try {
     const listParams = {
       Bucket: process.env.S3_BUCKET_NAME,
-      Prefix: `${ticketId}/`, // Delete all files under this prefix
+      Prefix: `${ticketId}/`, 
     };
 
     const listCommand = new ListObjectsV2Command(listParams);
@@ -94,8 +95,27 @@ const deleteS3Folder = async (ticketId) => {
     throw error;
   }
 };
+const deleteFileFromS3 = async (key) => {
+  if (!key) throw new Error("Missing S3 object key");
+
+  const params = {
+    Bucket: process.env.S3_BUCKET_NAME,
+    Key: key,
+  };
+
+  try {
+    const command = new DeleteObjectCommand(params);
+    await s3.send(command);
+    console.log(`S3 File Deleted: ${key}`);
+  } catch (err) {
+    console.error('Error deleting file from S3:', err);
+    throw err;
+  }
+};
+
 module.exports = {
   upload,
   getImageUrl,
   deleteS3Folder,
+  deleteFileFromS3
 };

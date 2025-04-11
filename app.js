@@ -43,8 +43,8 @@ app.use(morgan('tiny'));
 app.use(helmet());  
 const corsOptions = {
   origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true,  // Allow cookies and authorization headers to be included
+  methods: ['GET', 'POST', 'PUT', 'DELETE','PATCH'],
+  credentials: true, 
 };
 
 app.use(cors(corsOptions));
