@@ -6,6 +6,7 @@ const Department = require('../models/Department');
 const { Sequelize } = require('sequelize');
 const { Op } = require('sequelize');
 const emailHelper = require('../utils/emailHelper');
+const { deleteS3Folder,getImageUrl  } = require('../utils/fileHelper');
 const { Parser } = require('json2csv'); 
 const ExcelJS = require('exceljs'); 
 const PDFDocument = require('pdfkit');
@@ -72,18 +73,18 @@ const getImage = async (req, res) => {
       return res.status(400).json({ message: 'ticketId and filename are required' });
     }
 
-    const bucketName = process.env.S3_BUCKET_NAME;
-    const region = process.env.AWS_REGION;
-
-    const key = `${ticketId}/${filename}`;
-    const imageUrl = `https://${bucketName}.s3.${region}.amazonaws.com/${key}`;
+    const imageUrl = await getImageUrl(ticketId, filename);
 
     return res.status(200).json({ imageUrl });
   } catch (error) {
-    console.error('Error generating image URL:', error);
+    if (error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
+      return res.status(404).json({ message: 'Image not found in S3 bucket' });
+    }
+    console.error('Error getting image from S3:', error);
     return res.status(500).json({ message: 'Failed to get image', error: error.message });
   }
 };
+
 
 const assignTicket = async (req, res) => {
   try {
@@ -313,7 +314,7 @@ const getTicketById = async (req, res) => {
         {
           model: User,
           as: 'user',  
-          attributes: ['id', 'firstname', 'email']
+          attributes: ['id', 'firstname','email']
         },
         {
           model: User,
@@ -388,6 +389,7 @@ const updateTicket = async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, priority, category} = req.body;
+    console.log('req.body', req.body);
     const ticket = await Ticket.findByPk(id);
     if (!ticket) {
       return res.status(404).json({ message: 'Ticket not found' });
@@ -449,18 +451,21 @@ const viewTicket = async (req, res) => {
 const deleteTicket = async (req, res) => {
   try {
     const { id } = req.params;
+
     const ticket = await Ticket.findByPk(id);
     if (!ticket) {
       return res.status(404).json({ message: 'Ticket not found' });
     }
-    const ticketFolder = path.join(__dirname, '../uploads', id);
-    if (fs.existsSync(ticketFolder)) {
-      fs.rmSync(ticketFolder, { recursive: true, force: true });
-      console.log(`Deleted folder: ${ticketFolder}`);
-    }
+
+    // Delete from S3
+    await deleteS3Folder(id);
+
+    // Delete from DB
     await ticket.destroy();
-    return res.status(200).json({ message: 'Ticket deleted successfully' });
+
+    return res.status(200).json({ message: 'Ticket and associated S3 files deleted successfully' });
   } catch (error) {
+    console.error('Error deleting ticket:', error);
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
