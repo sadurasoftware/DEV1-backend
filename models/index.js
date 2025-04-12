@@ -8,7 +8,8 @@ const RoleModulePermission = require('./RoleModulePermission');
 const Department = require('./Department');
 const Category = require('./Category');
 const Ticket = require('./Ticket');
-const models = { User, Role, Permission, Module, RoleModulePermission, Department,Category, Ticket };
+const Comment = require('./Comment')
+const models = { User, Role, Permission, Module, RoleModulePermission, Department,Category, Ticket,Comment };
 
 Object.keys(models).forEach((modelName) => {
   if (models[modelName].associate) {

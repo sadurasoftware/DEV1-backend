@@ -32,6 +32,10 @@ User.associate = models => {
     foreignKey: 'assignedTo',
     as: 'assignedTickets',
   });
+  User.hasMany(models.Comment, {
+    foreignKey: 'updatedBy',
+    as: 'commentedTickets',
+  });
 }
 
 module.exports = User;

@@ -4,7 +4,6 @@ const morgan = require('morgan');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
-const path = require('path');
 const helmet = require('helmet');
 const { apiLimiter } = require('./middlewares/rateLimit');
 const logger = require('./config/logger');
@@ -19,6 +18,7 @@ const department=require('./routes/departmentRoutes')
 const ticketRoutes=require('./routes/ticketRoutes')
 const categoryRoutes=require('./routes/categoryRoutes')
 const serverless = require("serverless-http");
+const commentRoutes=require('./routes/commentRoutes')
 dotenv.config();
 
 const app = express();
@@ -38,13 +38,13 @@ app.use(
     },
   })
 );
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 app.use(morgan('tiny'));  
 app.use(helmet());  
 const corsOptions = {
-  origin: 'http://localhost:5173',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  credentials: true,  // Allow cookies and authorization headers to be included
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE','PATCH'],
+  credentials: true, 
 };
 
 app.use(cors(corsOptions));
@@ -61,6 +61,7 @@ app.use('/api/role-module-permissions', roleModulePermissionRoutes);
 app.use('/api/department',department)
 app.use('/api/tickets',ticketRoutes)
 app.use('/api/category',categoryRoutes)
+app.use('/api/comments',commentRoutes)
 app.use((err, req, res, next) => {
   logger.error(err.message);
   res.status(err.status || 500).json({ message: 'Internal Server Error' });

@@ -1,4 +1,6 @@
 const Ticket = require('../models/Ticket');
+const Role=require('../models/Role');
+const Comment = require('../models/Comment');
 const logger = require('../config/logger');
 const Category = require('../models/Category');
 const User = require('../models/User');
@@ -6,6 +8,7 @@ const Department = require('../models/Department');
 const { Sequelize } = require('sequelize');
 const { Op } = require('sequelize');
 const emailHelper = require('../utils/emailHelper');
+const { deleteS3Folder,getImageUrl  } = require('../utils/fileHelper');
 const { Parser } = require('json2csv'); 
 const ExcelJS = require('exceljs'); 
 const PDFDocument = require('pdfkit');
@@ -17,9 +20,7 @@ const { v4: uuidv4 } = require('uuid');
 
 
 const createTicket = async (req, res) => {
-  try {
-    // const ticketId = uuidv4();
-    // req.ticketId = ticketId;
+  try {;
     const { title, description, priority, category} = req.body;
     const createdBy = req.user.id;
     const ticketId = req.ticketId || uuidv4();
@@ -32,15 +33,6 @@ const createTicket = async (req, res) => {
       logger.warn(`Category not found: ${category}`);
       return res.status(404).json({ message: 'Category not found' });
     }
-    // let attachmentUrl = null;
-    // if (req.file) {
-    //   attachmentUrl = await uploadToS3(
-    //     req.file.buffer,
-    //     ticketId,
-    //     req.file.originalname,
-    //     req.file.mimetype
-    //   );
-    // }
     let attachment = null;
     if (req.file && req.file.key) {
       attachment = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${req.file.key}`;
@@ -72,18 +64,18 @@ const getImage = async (req, res) => {
       return res.status(400).json({ message: 'ticketId and filename are required' });
     }
 
-    const bucketName = process.env.S3_BUCKET_NAME;
-    const region = process.env.AWS_REGION;
-
-    const key = `${ticketId}/${filename}`;
-    const imageUrl = `https://${bucketName}.s3.${region}.amazonaws.com/${key}`;
+    const imageUrl = await getImageUrl(ticketId, filename);
 
     return res.status(200).json({ imageUrl });
   } catch (error) {
-    console.error('Error generating image URL:', error);
+    if (error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
+      return res.status(404).json({ message: 'Image not found in S3 bucket' });
+    }
+    console.error('Error getting image from S3:', error);
     return res.status(500).json({ message: 'Failed to get image', error: error.message });
   }
 };
+
 
 const assignTicket = async (req, res) => {
   try {
@@ -313,7 +305,7 @@ const getTicketById = async (req, res) => {
         {
           model: User,
           as: 'user',  
-          attributes: ['id', 'firstname', 'email']
+          attributes: ['id', 'firstname','email']
         },
         {
           model: User,
@@ -388,6 +380,7 @@ const updateTicket = async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, priority, category} = req.body;
+    console.log('req.body', req.body);
     const ticket = await Ticket.findByPk(id);
     if (!ticket) {
       return res.status(404).json({ message: 'Ticket not found' });
@@ -423,8 +416,30 @@ const updateTicket = async (req, res) => {
 };
 const viewTicket = async (req, res) => {
   try {
-    const { id } = req.params; 
-    const ticket = await Ticket.findByPk(id);
+    const { id } = req.params;
+
+    const ticket = await Ticket.findByPk(id, {
+      include: [
+        {
+          model: Comment,
+          as: 'comments',
+          include: [
+            {
+              model: User,
+              as: 'commenter',
+              attributes: ['id', 'firstname', 'lastname', 'email'],
+              include: [
+                {
+                  model: Role,
+                  as: 'role',
+                  attributes: ['name']
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    });
 
     if (!ticket) {
       return res.status(404).json({ message: 'Ticket not found' });
@@ -440,27 +455,43 @@ const viewTicket = async (req, res) => {
         status: ticket.status,
         assignedTo: ticket.assignedTo,
         createdAt: ticket.createdAt,
-      },
+        comments: ticket.comments.map(comment => ({
+          id: comment.id,
+          text: comment.commentText,
+          attachment: comment.attachment,
+          createdAt: comment.createdAt,
+          updatedBy: comment.commenter
+            ? {
+                id: comment.commenter.id,
+                firstname: comment.commenter.firstname,
+                lastname: comment.commenter.lastname,
+                email: comment.commenter.email,
+                role: comment.commenter.role?.name || 'N/A'
+              }
+            : null
+        }))
+      }
     });
   } catch (error) {
+    console.error('View Ticket Error:', error);
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 const deleteTicket = async (req, res) => {
   try {
     const { id } = req.params;
+
     const ticket = await Ticket.findByPk(id);
     if (!ticket) {
       return res.status(404).json({ message: 'Ticket not found' });
     }
-    const ticketFolder = path.join(__dirname, '../uploads', id);
-    if (fs.existsSync(ticketFolder)) {
-      fs.rmSync(ticketFolder, { recursive: true, force: true });
-      console.log(`Deleted folder: ${ticketFolder}`);
-    }
+    await deleteS3Folder(id);
+
     await ticket.destroy();
-    return res.status(200).json({ message: 'Ticket deleted successfully' });
+    
+    return res.status(200).json({ message: 'Ticket and associated S3 files deleted successfully' });
   } catch (error) {
+    console.error('Error deleting ticket:', error);
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
