@@ -390,13 +390,6 @@ const createTicketSchema = Joi.object({
     'any.only': `"Priority" must be one of ["Low", "Medium", "High"]`,
     'any.required': `"Priority" is required`,
   }),
-  status: Joi.string()
-  .valid("Open", "In Progress", "Resolved", "Closed", "Pending")
-  .required()
-  .messages({
-    'any.only': `"Status" must be one of ["Open", "In Progress", "Resolved", "Closed", "Pending"]`,
-    'any.required': `"Status" is required`,
-  }),
   category: Joi.string().min(3).max(50).required().messages({
   'string.base': `"Category" should be a type of 'text'`,
   'string.empty': `"Category" cannot be empty`,
