@@ -6,7 +6,6 @@ const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const helmet = require('helmet');
 const { apiLimiter } = require('./middlewares/rateLimit');
-const logger = require('./config/logger');
 const { errorHandler } = require('./middlewares/errorHandler');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
@@ -63,7 +62,6 @@ app.use('/api/tickets',ticketRoutes)
 app.use('/api/category',categoryRoutes)
 app.use('/api/comments',commentRoutes)
 app.use((err, req, res, next) => {
-  logger.error(err.message);
   res.status(err.status || 500).json({ message: 'Internal Server Error' });
 });
 app.get('/', (req, res) => {
@@ -76,10 +74,8 @@ app.listen(PORT, async () => {
   try {
     const sequelize = require('./config/database');
     await sequelize.authenticate();
-    logger.info(`Connected to the database successfully.`);
-    logger.info(`Server is running at http://localhost:${PORT}`);
   } catch (error) {
-    logger.error('Error connecting to the database:', error.message);
+    console.error('Error connecting to the database:', error);
   }
 });
 
