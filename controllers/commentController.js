@@ -2,10 +2,9 @@ const {Ticket, User,Role } = require('../models');
 const Comment=require('../models/Comment')
 const { deleteFileFromS3 } = require('../utils/fileHelper');
 const path = require('path');
-
 const addComment = async (req, res) => {
     try {
-        const {ticketId} = req.params;
+      const {ticketId} = req.params;
       const {commentText } = req.body;
       const userId = req.user.id; 
       const ticket = await Ticket.findByPk(ticketId);
@@ -17,7 +16,6 @@ const addComment = async (req, res) => {
           message: 'You are not authorized to comment on this ticket. Only the assigned support member can comment.',
         });
       }
-
       let attachment = null;
       if (req.file && req.file.key) {
         attachment = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${req.file.key}`;
@@ -60,23 +58,18 @@ const addComment = async (req, res) => {
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   };
-  
   const updateComment = async (req, res) => {
     try {
       const { id } = req.params;
       const { commentText } = req.body;
       const userId = req.user.id;
-  
       const comment = await Comment.findByPk(id);
       if (!comment) return res.status(404).json({ message: 'Comment not found' });
-  
       if (comment.updatedBy !== userId) {
         return res.status(403).json({ message: 'You are not authorized to update this comment' });
       }
-  
       comment.commentText = commentText || comment.commentText;
       await comment.save();
-  
       return res.status(200).json({
         message: 'Comment updated successfully',
         comment
@@ -89,10 +82,8 @@ const addComment = async (req, res) => {
   const getTicketComments = async (req, res) => {
     try {
       const { ticketId } = req.params;
-  
       const ticket = await Ticket.findByPk(ticketId);
       if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
-  
       const comments = await Comment.findAll({
         where: { ticketId },
         order: [['createdAt', 'ASC']],
@@ -109,7 +100,6 @@ const addComment = async (req, res) => {
           }
         ]
       });
-  
       return res.status(200).json({ ticketId, comments });
     } catch (error) {
       console.error('Get ticket comments error:', error);

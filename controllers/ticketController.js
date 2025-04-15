@@ -1,10 +1,4 @@
-const Ticket = require('../models/Ticket');
-const Role=require('../models/Role');
-const Comment = require('../models/Comment');
-const logger = require('../config/logger');
-const Category = require('../models/Category');
-const User = require('../models/User');
-const Department = require('../models/Department');
+const {Ticket,Role,User,Category,Department,Comment} = require('../models');
 const { Sequelize } = require('sequelize');
 const { Op } = require('sequelize');
 const emailHelper = require('../utils/emailHelper');
@@ -18,19 +12,16 @@ const os = require('os');
 const downloadsDir = path.join(os.homedir(), 'Downloads');
 const { v4: uuidv4 } = require('uuid');
 
-
 const createTicket = async (req, res) => {
   try {;
     const { title, description, priority, category} = req.body;
     const createdBy = req.user.id;
     const ticketId = req.ticketId || uuidv4();
     if (!title || !description || !priority || !category) {
-      logger.warn('Missing required fields');
       return res.status(400).json({ message: 'All fields are required' });
     }
     const categoryData = await Category.findOne({ where: { name: category } });
     if (!categoryData) {
-      logger.warn(`Category not found: ${category}`);
       return res.status(404).json({ message: 'Category not found' });
     }
     let attachment = null;
@@ -47,11 +38,8 @@ const createTicket = async (req, res) => {
       createdBy,
       assignedTo:null,
     });
-
-    logger.info(`Ticket created successfully: ${ticketId}`);
     return res.status(201).json({ message: 'Ticket created successfully', ticket });
   } catch (error) {
-    logger.error(`Error creating ticket: ${error.message}`);
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -59,13 +47,10 @@ const createTicket = async (req, res) => {
 const getImage = async (req, res) => {
   try {
     const { ticketId, filename } = req.params;
-
     if (!ticketId || !filename) {
       return res.status(400).json({ message: 'ticketId and filename are required' });
     }
-
     const imageUrl = await getImageUrl(ticketId, filename);
-
     return res.status(200).json({ imageUrl });
   } catch (error) {
     if (error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
@@ -75,8 +60,6 @@ const getImage = async (req, res) => {
     return res.status(500).json({ message: 'Failed to get image', error: error.message });
   }
 };
-
-
 const assignTicket = async (req, res) => {
   try {
     const { id } = req.params;
@@ -108,14 +91,11 @@ const assignTicket = async (req, res) => {
     await ticket.save();
     const ticketUrl = `${process.env.TICKET_ASSIGN_URL}/assigned-ticket/${ticket.id}`
     await emailHelper.ticketAssignedEmail(assignedUser.email, assignedUser.firstname, ticket.id, ticket.title, ticket.description,ticketUrl);
-    logger.info(`Ticket ${id} assigned to user ${assignedUser.id}`);
     return res.status(200).json({ message: 'Ticket assigned successfully', ticket });
   } catch (error) {
-    logger.error(`Error assigning ticket: ${error.message}`);
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
-
 const getSupportTeamUsers = async (req, res) => {
   try {
     const supportDepartment = await Department.findOne({
@@ -189,7 +169,6 @@ const getTicketsByUser = async (req, res) => {
     if (!targetUser) {
       return res.status(404).json({ message: 'User not found' });
     }
-
     const tickets = await Ticket.findAll({
       where: { createdBy: userId },
       include: [
@@ -199,9 +178,7 @@ const getTicketsByUser = async (req, res) => {
       ],
       order: [['createdAt', 'DESC']]
     });
-
     return res.status(200).json({ tickets });
-
   } catch (error) {
     console.error('Error fetching user-created tickets:', error.message);
     return res.status(500).json({ message: 'Server error', error: error.message });
@@ -214,40 +191,31 @@ const getSolvedTicketsByUser = async (req, res) => {
       where: { id: userId },
       include: [{ model: Department, as: 'department', attributes: ['name'] }]
     });
-
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-
     if (!user.department || user.department.name.toLowerCase().trim() !== 'support team department') {
       return res.status(403).json({ message: 'User is not part of the Support Team' });
     }
-
     const solvedTicketCount = await Ticket.count({
       where: {
         assignedTo: userId,
         status: ['Resolved'] 
       }
     });
-
     return res.status(200).json({
       userId,
       solvedTickets: solvedTicketCount
     });
-
   } catch (error) {
     console.error('Error fetching solved tickets count:', error.message);
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
-
-
-
 const getAllTickets = async (req, res) => {
   try {
     const { status, priority, page = 1, limit = 10, search = '' } = req.query;
     const offset = (page - 1) * limit;
-
     const whereClause = {};
 
     if (status) whereClause.status = status;
@@ -255,7 +223,6 @@ const getAllTickets = async (req, res) => {
     if (search) {
       whereClause.title = { [Op.like]: `%${search}%` };
     }
-
     const tickets = await Ticket.findAndCountAll({
       where: whereClause,
       include: [
@@ -279,7 +246,6 @@ const getAllTickets = async (req, res) => {
       offset: parseInt(offset),
       order: [['createdAt', 'DESC']]
     });
-
     return res.status(200).json({
       total: tickets.count,
       page: parseInt(page),
@@ -290,11 +256,9 @@ const getAllTickets = async (req, res) => {
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
-
 const getTicketById = async (req, res) => {
   try {
     const { id } = req.params;
-
     const ticket = await Ticket.findByPk(id, {
       include: [
         {
@@ -316,7 +280,6 @@ const getTicketById = async (req, res) => {
     });
 
     if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
-
     return res.status(200).json({ ticket });
   } catch (error) {
     return res.status(500).json({ message: 'Server error', error: error.message });
@@ -348,7 +311,6 @@ const updateTicketStatus = async (req, res) => {
     ticket.status = status;
     await ticket.save();
     return res.status(200).json({ message: 'Status updated', ticket });
-
   } catch (error) {
     console.error('Error updating ticket status:', error.message);
     return res.status(500).json({ message: 'Server error', error: error.message });
@@ -375,12 +337,10 @@ const getTicketStatusCount = async (req, res) => {
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
-
 const updateTicket = async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, priority, category} = req.body;
-    console.log('req.body', req.body);
     const ticket = await Ticket.findByPk(id);
     if (!ticket) {
       return res.status(404).json({ message: 'Ticket not found' });
@@ -406,18 +366,14 @@ const updateTicket = async (req, res) => {
       categoryId: categoryData ? categoryData.id : ticket.categoryId,
       // assignedTo: assignedUser ? assignedUser.id : ticket.assignedTo,
     });
-
-    logger.info(`Ticket ${id} updated successfully`);
     return res.status(200).json({ message: 'Ticket updated successfully', ticket });
   } catch (error) {
-    logger.error(`Error updating ticket: ${error.message}`);
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 const viewTicket = async (req, res) => {
   try {
     const { id } = req.params;
-
     const ticket = await Ticket.findByPk(id, {
       include: [
         {
@@ -480,7 +436,6 @@ const viewTicket = async (req, res) => {
 const deleteTicket = async (req, res) => {
   try {
     const { id } = req.params;
-
     const ticket = await Ticket.findByPk(id);
     if (!ticket) {
       return res.status(404).json({ message: 'Ticket not found' });
@@ -596,13 +551,11 @@ const exportTickets = async (req, res) => {
       message: `Tickets exported successfully in ${format} format`,
       file: filePath
     });
-
   } catch (error) {
     console.error('Error exporting tickets:', error.message);
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
-
 const updateCategory = async (req, res) => {
   try {
     const { id } = req.params; 
@@ -611,7 +564,6 @@ const updateCategory = async (req, res) => {
     if (!category) {
       return res.status(404).json({ message: 'Category not found' });
     }
-
     category.name = categoryName;
     await category.save();
 
