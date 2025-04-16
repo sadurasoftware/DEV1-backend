@@ -12,4 +12,5 @@ router.post('/:ticketId', authenticateToken, setTicketId,upload.single('attachme
 router.put('/update/:id', authenticateToken, commentController.updateComment);
 router.get('/get/:ticketId',commentController.getTicketComments);
 router.delete('/delete/:commentId', authenticateToken,commentController.deleteComment);
+router.get('/:commentId',commentController.getCommentById);
 module.exports = router;
