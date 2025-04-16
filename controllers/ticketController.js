@@ -461,7 +461,8 @@ const generateUniqueFilePath = (dir, baseName, extension) => {
 };
 const exportTickets = async (req, res) => {
   try {
-    const { format } = req.query;
+    const { format, startDate, endDate } = req.query;
+
     if (!['csv', 'excel', 'pdf'].includes(format)) {
       return res.status(400).json({ message: 'Invalid format. Use csv, excel, or pdf' });
     }
@@ -470,7 +471,15 @@ const exportTickets = async (req, res) => {
       fs.mkdirSync(downloadsDir, { recursive: true });
     }
 
+    const whereClause = {};
+    if (startDate && endDate) {
+      whereClause.createdAt = {
+        [Op.between]: [new Date(startDate), new Date(endDate)]
+      };
+    }
+
     const tickets = await Ticket.findAll({
+      where: whereClause,
       include: [
         { model: User, as: 'user', attributes: ['firstname', 'email'] },
         { model: User, as: 'assignedUser', attributes: ['firstname', 'email'] },
@@ -480,7 +489,7 @@ const exportTickets = async (req, res) => {
     });
 
     if (!tickets.length) {
-      return res.status(404).json({ message: 'No tickets found' });
+      return res.status(404).json({ message: 'No tickets found in this date range' });
     }
 
     const data = tickets.map(ticket => ({
@@ -519,14 +528,12 @@ const exportTickets = async (req, res) => {
         { header: 'Created At', key: 'CreatedAt' },
         { header: 'Updated At', key: 'UpdatedAt' }
       ];
-
       worksheet.addRows(data);
       await workbook.xlsx.writeFile(filePath);
     } else if (format === 'pdf') {
       filePath = generateUniqueFilePath(downloadsDir, 'tickets', 'pdf');
       const doc = new PDFDocument();
       doc.pipe(fs.createWriteStream(filePath));
-
       doc.fontSize(20).text('Ticket Report', { align: 'center' });
       doc.moveDown();
 
@@ -551,6 +558,7 @@ const exportTickets = async (req, res) => {
       message: `Tickets exported successfully in ${format} format`,
       file: filePath
     });
+
   } catch (error) {
     console.error('Error exporting tickets:', error.message);
     return res.status(500).json({ message: 'Server error', error: error.message });

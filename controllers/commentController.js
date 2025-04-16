@@ -129,10 +129,23 @@ const addComment = async (req, res) => {
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   };
+
+  const getCommentById = async (req, res) => {
+    try {
+      const { commentId } = req.params;
+      const comment = await Comment.findByPk(commentId);
+      if (!comment) return res.status(404).json({ message: 'Comment not found' });
+      return res.status(200).json({ comment });
+    } catch (error) {
+      console.error('Get comment by ID error:', error);
+      return res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  };
   
 module.exports = {
   addComment,
   updateComment,
   getTicketComments,
-  deleteComment
+  deleteComment,
+  getCommentById
 };
