@@ -3,13 +3,25 @@ const Joi = require('joi');
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 //register
 const registerSchema = Joi.object({
-  firstname: Joi.string().min(3).max(50).required().messages({
+  firstname: Joi.string()
+  .pattern(/^[A-Za-z\s]+$/)
+  .min(3)
+  .max(50)
+  .required()
+  .messages({
+    'string.pattern.base': `"First name" can only contain letters and spaces`,
     'string.empty': `"First name" cannot be empty`,
     'string.min': `"First name" should have at least {#limit} characters`,
     'string.max': `"First name" should have at most {#limit} characters`,
     'any.required': `"First name" is required`,
   }),
-  lastname: Joi.string().min(1).max(50).required().messages({
+  lastname: Joi.string()
+  .pattern(/^[A-Za-z\s]+$/)
+  .min(1)
+  .max(50)
+  .required()
+  .messages({
+    'string.pattern.base': `"Last name" can only contain letters and spaces`,
     'string.empty': `"Last name" cannot be empty`,
     'string.min': `"Last name" should have at least {#limit} characters`,
     'string.max': `"Last name" should have at most {#limit} characters`,
@@ -20,9 +32,12 @@ const registerSchema = Joi.object({
     'string.empty': `"Email" cannot be empty`,
     'any.required': `"Email" is required`,
   }),
-  password: Joi.string().min(6).max(30).required().messages({
-    'string.min': `"Password" should have at least {#limit} characters`,
-    'string.max': `"Password" should have at most {#limit} characters`,
+  password: Joi.string()
+  .pattern(passwordRegex)
+  .required()
+  .messages({
+    'string.pattern.base': `"Password" must contain at least 8 characters, including uppercase, lowercase, number, and special character`,
+    'string.empty': `"Password" cannot be empty`,
     'any.required': `"Password" is required`,
   }),
   terms: Joi.boolean().valid(true).required().messages({
@@ -46,13 +61,19 @@ const loginSchema = Joi.object({
   }),
   password: Joi.string().pattern(passwordRegex).required().messages({
     'string.empty': 'Password is required',
-    'string.pattern.base': 'Password must be at least 6 characters long and contain at least one letter and one number',
-    'any.required': 'Password is required',
+      'string.pattern.base': 'Password must be at least 8 characters long, include uppercase, lowercase, number, and special character',
+      'any.required': 'Password is required',
   }),
 });
 
 //forgetpassword
 const forgetPasswordSchema = Joi.object({
+  email: Joi.string().pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/,).required().messages({
+    'string.empty': 'Email is required',
+    'string.email': 'Please provide a valid email',
+  }),
+});
+const resendVerifyEmailSchema = Joi.object({
   email: Joi.string().pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/,).required().messages({
     'string.empty': 'Email is required',
     'string.email': 'Please provide a valid email',
@@ -65,20 +86,22 @@ const resetPasswordSchema = Joi.object({
     'string.base': 'Token must be a valid string',
   }),
   newPassword: Joi.string().pattern(passwordRegex).required().messages({
-    'string.empty': 'New password is required',
-    'string.pattern.base':
-      'Password should be a combination of one uppercase, one lowercase, one special character, one digit, and be between 8 and 20 characters long',
+    'string.empty': 'Password is required',
+      'string.pattern.base': 'Password must be at least 8 characters long, include uppercase, lowercase, number, and special character',
+      'any.required': 'Password is required',
   }),
 });
 //changePassword
 const changePasswordSchema = Joi.object({
   oldPassword: Joi.string().pattern(passwordRegex).required().messages({
-    'string.empty': 'Please enter your old password',
+    'string.empty': 'Please oldPassword is required',
+    'string.pattern.base': 'Password must be at least 8 characters long, include uppercase, lowercase, number, and special character',
+    'any.required': 'Password is required',
   }),
   newPassword: Joi.string().pattern(passwordRegex).required().messages({
-    'string.empty': 'Please enter a new password',
-    'string.pattern.base':
-      'Password should be a combination of one uppercase, one lowercase, one special character, one digit, and be between 8 and 20 characters long',
+    'string.empty': 'Please New Password is required',
+    'string.pattern.base': 'Password must be at least 8 characters long, include uppercase, lowercase, number, and special character',
+    'any.required': 'Password is required',
   }),
 });
 //role
@@ -256,63 +279,105 @@ const deleteDepartmentSchema = Joi.object({
 });
 //user-management
 const createUservalidator = Joi.object({
-  firstname: Joi.string().min(3).max(50).required().messages({
-    'string.empty': 'Name is required',
-    'string.min': 'Firstname must be at least 3 characters long',
-    'string.max': 'Name must not exceed 50 characters',
+  firstname: Joi.string()
+  .pattern(/^[A-Za-z\s]+$/)
+  .min(3)
+  .max(50)
+  .required()
+  .messages({
+    'string.pattern.base': `"First name" can only contain letters and spaces`,
+    'string.empty': `"First name" cannot be empty`,
+    'string.min': `"First name" should have at least {#limit} characters`,
+    'string.max': `"First name" should have at most {#limit} characters`,
+    'any.required': `"First name" is required`,
   }),
-  lastname: Joi.string().min(1).max(50).required().messages({
-    'string.empty': 'Name is required',
-    'string.min': 'lastname must be at least 1 characters long',
-    'string.max': 'Name must not exceed 50 characters',
+  lastname: Joi.string()
+  .pattern(/^[A-Za-z\s]+$/)
+  .min(1)
+  .max(50)
+  .required()
+  .messages({
+    'string.pattern.base': `"Last name" can only contain letters and spaces`,
+    'string.empty': `"Last name" cannot be empty`,
+    'string.min': `"Last name" should have at least {#limit} characters`,
+    'string.max': `"Last name" should have at most {#limit} characters`,
+    'any.required': `"Last name" is required`,
   }),
-  email: Joi.string().pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/,).required().messages({
-    'string.empty': 'Email is required',
-    'string.email': 'Invalid email format',
+  email: Joi.string().email().pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/,).required().messages({
+    'string.email': `"Email" must be a valid email address`,
+    'string.empty': `"Email" cannot be empty`,
+    'any.required': `"Email" is required`,
   }),
-  password: Joi.string().pattern(passwordRegex).required().messages({
-    'string.empty': 'Password is required',
-    'string.pattern.base':
-      'Password should be a combination of one uppercase, one lowercase, one special character, one digit, and be between 8 and 20 characters long',
+  password: Joi.string()
+  .pattern(passwordRegex)
+  .required()
+  .messages({
+    'string.pattern.base': `"Password" must contain at least 8 characters, including uppercase, lowercase, number, and special character`,
+    'string.empty': `"Password" cannot be empty`,
+    'any.required': `"Password" is required`,
   }),
-  role: Joi.string().required().messages({
-    'string.empty': 'Role is required',
-    'string.base': 'Role must be a valid string',
-  }),
-  departmentId: Joi.number().integer().required().messages({
-    'number.base': 'departmentId must be a number.',
-    'any.required': 'departmentId is required.',
-  }),
-  terms: Joi.boolean().required().messages({
-    'boolean.base': 'terms must be a boolean.',
-    'any.required': 'terms is required.',
-  }),
-})
-
-const updateUservalidator = Joi.object({
-  firstname: Joi.string().min(3).max(50).required().messages({
-    'string.empty': 'Name is required',
-    'string.min': 'Firstname must be at least 3 characters long',
-    'string.max': 'Name must not exceed 50 characters',
-  }),
-  lastname: Joi.string().min(1).max(50).required().messages({
-    'string.empty': 'Name is required',
-    'string.min': 'lastname must be at least 1 characters long',
-    'string.max': 'Name must not exceed 50 characters',
-  }),
-  email: Joi.string().pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/,).required().messages({
-    'string.empty': 'Email is required',
-    'string.email': 'Invalid email format',
+  terms: Joi.boolean().valid(true).required().messages({
+    'any.only': `"Terms" must be accepted`,
+    'any.required': `"Terms" is required`,
   }),
   role: Joi.string().required().messages({
-    'string.empty': 'Role is required',
-    'string.base': 'Role must be a valid string',
+    'string.empty': `"Role" cannot be empty`,
+    'any.required': `"Role" is required`,
   }),
   departmentId: Joi.number().integer().required().messages({
     'number.base': 'departmentId must be a number.',
     'any.required': 'departmentId is required.',
   }),
 });
+ 
+const updateUservalidator = Joi.object({
+  firstname: Joi.string()
+  .pattern(/^[A-Za-z\s]+$/)
+  .min(3)
+  .max(50)
+  .required()
+  .messages({
+    'string.pattern.base': `"First name" can only contain letters and spaces`,
+    'string.empty': `"First name" cannot be empty`,
+    'string.min': `"First name" should have at least {#limit} characters`,
+    'string.max': `"First name" should have at most {#limit} characters`,
+    'any.required': `"First name" is required`,
+  }),
+  lastname: Joi.string()
+  .pattern(/^[A-Za-z\s]+$/)
+  .min(1)
+  .max(50)
+  .required()
+  .messages({
+    'string.pattern.base': `"Last name" can only contain letters and spaces`,
+    'string.empty': `"Last name" cannot be empty`,
+    'string.min': `"Last name" should have at least {#limit} characters`,
+    'string.max': `"Last name" should have at most {#limit} characters`,
+    'any.required': `"Last name" is required`,
+  }),
+  email: Joi.string().email().pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/,).required().messages({
+    'string.email': `"Email" must be a valid email address`,
+    'string.empty': `"Email" cannot be empty`,
+    'any.required': `"Email" is required`,
+  }),
+  password: Joi.string()
+  .pattern(passwordRegex)
+  .required()
+  .messages({
+    'string.pattern.base': `"Password" must contain at least 8 characters, including uppercase, lowercase, number, and special character`,
+    'string.empty': `"Password" cannot be empty`,
+    'any.required': `"Password" is required`,
+  }),
+  role: Joi.string().required().messages({
+    'string.empty': `"Role" cannot be empty`,
+    'any.required': `"Role" is required`,
+  }),
+  departmentId: Joi.number().integer().required().messages({
+    'number.base': 'departmentId must be a number.',
+    'any.required': 'departmentId is required.',
+  }),
+});
+ 
 
 const viewUserSchema=Joi.object({
   id: Joi.number().integer().required().messages({
@@ -524,7 +589,8 @@ module.exports = {
   forgetPasswordValidator: validate(forgetPasswordSchema),
   resetPasswordValidator: validate(resetPasswordSchema),
   changePasswordValidator: validate(changePasswordSchema),
-
+  resendVerifyEmailValidator : validate(resendVerifyEmailSchema),
+  
   roleValidator: validate(roleSchema),
   getRoleByIdvalidator: validateParams(getRollByIdsSchema),
  

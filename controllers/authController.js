@@ -115,6 +115,7 @@ const login = async (req, res) => {
     const permissionList = permissions.map((perm) => ({
       module: perm.Module.name,
       permission: perm.Permission.name,
+      status: perm.status 
     }));
       //   const roleData = await Role.findOne({ where: { id: user.roleId } });
       //   if (!roleData) {
