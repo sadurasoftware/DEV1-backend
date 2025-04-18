@@ -490,6 +490,13 @@ const getTicketByIdSchema = Joi.object({
       "any.required": "ID is required.",
     }),
 });
+const getUserByTicketsSchema = Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "id must be a number.",
+    "number.integer": "id must be an integer.",
+    "any.required": "id is required.",
+  }),
+});
 const updateTicketStatusSchema = Joi.object({
   status: Joi.string()
     .valid('Open', 'Pending', 'Resolved', 'Closed', 'In Progress')
@@ -519,27 +526,34 @@ const updateTicketParamsSchema = Joi.object({
     }),
 });
 const updateTicketSchema = Joi.object({
-  title: Joi.string().min(3).max(50).optional().messages({
+  title: Joi.string().min(3).max(50).required().messages({
     'string.base': `"Title" should be a type of 'text'`,
     'string.empty': `"Title" cannot be empty`,
     'string.min': `"Title" should have at least {#limit} characters`,
     'string.max': `"Title" should have at most {#limit} characters`,
+    'any.required': `"Title" is required`,
   }),
-  description: Joi.string().min(3).max(1000).optional().messages({
+  description: Joi.string().min(3).max(50).required().messages({
     'string.base': `"Description" should be a type of 'text'`,
     'string.empty': `"Description" cannot be empty`,
     'string.min': `"Description" should have at least {#limit} characters`,
     'string.max': `"Description" should have at most {#limit} characters`,
+    'any.required': `"Description" is required`,
   }),
-  priority: Joi.string().valid("Low", "Medium", "High").optional().messages({
-    'any.only': `"Priority" must be one of ['Low', 'Medium', 'High']`,
+  priority: Joi.string()
+  .valid("Low", "Medium", "High")
+  .required()
+  .messages({
+    'any.only': `"Priority" must be one of ["Low", "Medium", "High"]`,
+    'any.required': `"Priority" is required`,
   }),
-  category: Joi.string().min(3).max(50).optional().messages({
-    'string.base': `"Category" should be a type of 'text'`,
-    'string.empty': `"Category" cannot be empty`,
-    'string.min': `"Category" should have at least {#limit} characters`,
-    'string.max': `"Category" should have at most {#limit} characters`,
-  }),
+  category: Joi.string().min(3).max(50).required().messages({
+  'string.base': `"Category" should be a type of 'text'`,
+  'string.empty': `"Category" cannot be empty`,
+  'string.min': `"Category" should have at least {#limit} characters`,
+  'string.max': `"Category" should have at most {#limit} characters`,
+  'any.required': `"Category" is required`,
+   }),
 });
 const viewTicketSchema = Joi.object({
   id: Joi.string()
@@ -560,6 +574,87 @@ const deleteTicketSchema = Joi.object({
     }),
 });
 
+const getImageSchema = Joi.object({
+  ticketId: Joi.string().uuid().required().messages({
+    'string.empty': 'ticketId is required',
+    'string.guid': 'ticketId must be a valid UUID',
+    'any.required': 'ticketId is required',
+  }),
+  filename: Joi.string().min(3).required().messages({
+    'string.empty': 'filename is required',
+    'any.required': 'filename is required',
+    'string.min': 'filename must be at least {#limit} characters',
+  }),
+});
+
+const exportTicketsSchema = Joi.object({
+  format: Joi.string()
+    .valid('csv', 'excel', 'pdf')
+    .required()
+    .messages({
+      'any.only': 'Invalid format. Use csv, excel, or pdf',
+      'string.empty': 'Format is required',
+      'any.required': 'Format is required',
+    }),
+  startDate: Joi.date().iso().optional().messages({
+    'date.format': 'Start date must be a valid ISO date',
+  }),
+  endDate: Joi.date().iso().optional().messages({
+    'date.format': 'End date must be a valid ISO date',
+  }),
+});
+
+const addcommentSchemaParams =Joi.object({
+  ticketId: Joi.string().uuid().required().messages({
+    'string.guid': 'Invalid ticket ID format',
+    'any.required': 'ticketId is required',
+  }),
+})
+const addcommentSchema = Joi.object({
+  commentText: Joi.string().min(1).required().messages({
+    'string.empty': 'Comment text cannot be empty',
+    'any.required': 'Comment text is required',
+  }),
+});
+
+const updatecommentSchemaParams =Joi.object({
+  ticketId: Joi.string().uuid().required().messages({
+    'string.guid': 'Invalid ticket ID format',
+    'any.required': 'ticketId is required',
+  }),
+  commentId: Joi.number().integer().required().messages({
+    "number.base": "CommentId must be a number.",
+    "number.integer": "CommentId must be an integer.",
+    "any.required": "CommentId is required.",
+  }),
+})
+const updatecommentSchema = Joi.object({
+  commentText: Joi.string().min(1).required().messages({
+    'string.empty': 'Comment text cannot be empty',
+    'any.required': 'Comment text is required',
+  }),
+});
+const getTicketCommentParams =Joi.object({
+  ticketId: Joi.string().uuid().required().messages({
+    'string.guid': 'Invalid ticket ID format',
+    'any.required': 'ticketId is required',
+  }),
+})
+
+const  deleteCommentSchema = Joi.object({
+  commentId: Joi.number().integer().required().messages({
+    "number.base": "CommentId must be a number.",
+    "number.integer": "CommentId must be an integer.",
+    "any.required": "CommentId is required.",
+  }),
+})
+const  getCommentByIdSchema = Joi.object({
+  commentId: Joi.number().integer().required().messages({
+    "number.base": "CommentId must be a number.",
+    "number.integer": "CommentId must be an integer.",
+    "any.required": "CommentId is required.",
+  }),
+})
 const validate = (schema) => (req, res, next) => {
   const { error } = schema.validate(req.body, { abortEarly: false });
   if (error) {
@@ -629,14 +724,25 @@ module.exports = {
 
   assignTicketSchemaValidator: validate(assignTicketSchema),
   getTicketByIdSchemaValidator: validateParams(getTicketByIdSchema),
+  getUserByTicketsSchemaValidator: validateParams(getUserByTicketsSchema),
 
   updateTicketParamsSchemaValidator: validateParams(updateTicketParamsSchema),
-  updateTicketSchemaValidator: validateParams(updateTicketSchema),
+  updateTicketSchemaValidator: validate(updateTicketSchema),
 
   viewTicketSchemaValidator: validateParams(viewTicketSchema),
   deleteTicketSchemaValidator: validateParams(deleteTicketSchema),
+  exportTicketsSchemaValidator: validateQuery(exportTicketsSchema),
+  getImageSchemaValidator: validateParams(getImageSchema),
 
   updateTicketStatusSchemaValidator: validate(updateTicketStatusSchema),
   updateTicketStatusParamsSchemaValidator: validateParams(updateTicketStatusParamsSchema),
   deleteTicketSchemaValidator: validateParams(deleteTicketSchema),
+
+  addcommentParmasValidator : validateParams(addcommentSchemaParams),
+  addcommentValidator : validate(addcommentSchema),
+  updateCommentParamsValidation : validateParams(updatecommentSchemaParams),
+  updatecommentValidatior : validate(updatecommentSchema),
+  getTicketCommentValidator : validateParams(getTicketCommentParams),
+  deleteCommentValidator : validateParams(deleteCommentSchema),
+  getCommentByIdValidator : validateParams(getCommentByIdSchema),
 };
