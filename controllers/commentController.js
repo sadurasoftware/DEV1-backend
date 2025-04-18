@@ -63,20 +63,16 @@ const addComment = async (req, res) => {
       const { ticketId, commentId } = req.params;
       const { commentText } = req.body;
       const userId = req.user.id;
-  
-      // Check ticket existence
+
       const ticket = await Ticket.findByPk(ticketId);
       if (!ticket) {
         return res.status(404).json({ message: 'Ticket not found' });
       }
-  
-      // Find the comment
       const comment = await Comment.findOne({ where: { id: commentId, ticketId } });
       if (!comment) {
         return res.status(404).json({ message: 'Comment not found' });
       }
   
-      // Authorization check
       if (comment.updatedBy !== userId) {
         return res.status(403).json({ message: 'You are not authorized to update this comment.' });
       }
@@ -86,19 +82,16 @@ const addComment = async (req, res) => {
       //   const oldKey = comment.attachment.split('.com/')[1]; // get object key from full URL
       //   await deleteFileFromS3(oldKey);
       // }
-  
-      // New attachment URL
+
       let newAttachment = comment.attachment;
       if (req.file && req.file.key) {
         newAttachment = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${req.file.key}`;
       }
-  
-      // Update the comment
+
       comment.commentText = commentText || comment.commentText;
       comment.attachment = newAttachment;
       await comment.save();
-  
-      // Get user info
+
       const user = await User.findByPk(userId, {
         include: {
           model: Role,

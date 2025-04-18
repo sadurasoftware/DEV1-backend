@@ -109,8 +109,10 @@ async function updateUser(req, res) {
 }
 const getUsers = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search, departmentId } = req.query;
+    const { page = 1, limit = 10, search, departmentName } = req.query;
+
     const whereClause = { roleId: 3 };
+    const departmentWhere = {};
     if (search) {
       whereClause[Op.or] = [
         { firstname: { [Op.like]: `%${search}%` } },
@@ -118,20 +120,29 @@ const getUsers = async (req, res) => {
         { email: { [Op.like]: `%${search}%` } },
       ];
     }
-    if (departmentId) {
-      whereClause.departmentId = departmentId;
+
+    if (departmentName) {
+      departmentWhere.name = { [Op.like]: `%${departmentName}%` };
     }
+
     const offset = (page - 1) * limit;
+
     const { rows: users, count } = await User.findAndCountAll({
       where: whereClause,
       include: [
-        { model: Department, as: 'department', attributes: ['id', 'name'] },
+        {
+          model: Department,
+          as: 'department',
+          attributes: ['id', 'name'],
+          where: Object.keys(departmentWhere).length ? departmentWhere : undefined,
+        }
       ],
       attributes: ['id', 'firstname', 'lastname', 'email'],
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [['createdAt', 'DESC']],
     });
+
     return res.status(200).json({
       message: 'Users fetched successfully',
       totalUsers: count,

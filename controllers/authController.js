@@ -149,7 +149,7 @@ const verifyEmail = async (req, res) => {
                 Your email is already verified.
               </h2>
               <div style="font-size: 40px; color: #4CAF50; margin-bottom: 20px;">&#10004;</div>
-              <a href="http://localhost:5173/login" 
+              <a href="https://dev-1-frontend-hjag.vercel.app/login" 
                  style="display: inline-block; background-color: #4CAF50; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold; font-size: 18px;">
                  Login
               </a>
@@ -169,7 +169,7 @@ const verifyEmail = async (req, res) => {
               Your email is successfully verified. You can log in now.
             </h2>
             <div style="font-size: 40px; color: #4CAF50; margin-bottom: 20px;">&#10004;</div>
-            <a href="http://localhost:5173/login" 
+            <a href="https://dev-1-frontend-hjag.vercel.app/login" 
                style="display: inline-block; background-color: #4CAF50; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold; font-size: 18px;">
                Login
             </a>
@@ -236,7 +236,7 @@ const getResetPassword = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found.' });
     }
-    return res.redirect(`http://localhost:5173/reset-password?token=${token}`);
+    return res.redirect(`https://dev-1-backend.vercel.app/reset-password?token=${token}`);
   } catch (error) {
     return res.status(400).json({ message: 'Invalid or expired token' });
   }
