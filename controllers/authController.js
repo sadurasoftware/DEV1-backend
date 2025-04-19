@@ -31,13 +31,10 @@ const register = async (req, res) => {
       return res.status(400).json({ message: 'Invalid role' });
     }
 
-    let departmentId = null;
-    if (department) {
-      const departmentData = await Department.findOne({ where: { name: department } });
-      if (!departmentData) {
-        return res.status(400).json({ message: 'Invalid department' });
-      }
-      departmentId = departmentData.id;  
+    const departmentName = department || 'General department';
+    const departmentData = await Department.findOne({ where: { name: departmentName } });
+    if (!departmentData) {
+      return res.status(400).json({ message: `Invalid department: ${departmentName}` });
     }
     const hashedPassword = await bcryptHelper.hashPassword(password);
     const newUser = await User.create({
@@ -47,7 +44,7 @@ const register = async (req, res) => {
       password: hashedPassword,
       isVerified: false,
       roleId: roleData.id,
-      departmentId,
+      departmentId: departmentData.id,
       terms,
     });
     const tokenPayload = { id: newUser.id, email: newUser.email, firstname: newUser.firstname, lastname: newUser.lastname };
@@ -133,6 +130,7 @@ const verifyEmail = async (req, res) => {
   if (!token) {
     return res.status(400).json({ error: 'Token is missing' });
   }
+  const loginUrl = process.env.FRONTEND_LOGIN_URL
   try {
     const { email } = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findOne({ where: { email } });
@@ -149,7 +147,7 @@ const verifyEmail = async (req, res) => {
                 Your email is already verified.
               </h2>
               <div style="font-size: 40px; color: #4CAF50; margin-bottom: 20px;">&#10004;</div>
-              <a href="https://dev-1-frontend.vercel.app/login" 
+              <a href="${loginUrl}" 
                  style="display: inline-block; background-color: #4CAF50; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold; font-size: 18px;">
                  Login
               </a>
@@ -169,7 +167,7 @@ const verifyEmail = async (req, res) => {
               Your email is successfully verified. You can log in now.
             </h2>
             <div style="font-size: 40px; color: #4CAF50; margin-bottom: 20px;">&#10004;</div>
-            <a href="https://dev-1-frontend.vercel.app/login" 
+            <a href="${loginUrl}" 
                style="display: inline-block; background-color: #4CAF50; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold; font-size: 18px;">
                Login
             </a>
