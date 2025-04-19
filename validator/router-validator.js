@@ -48,9 +48,14 @@ const registerSchema = Joi.object({
     'string.empty': `"Role" cannot be empty`,
     'any.required': `"Role" is required`,
   }),
-  department: Joi.string().optional().allow(null, '').messages({
+  department: Joi.string()
+  .trim()
+  .optional()
+  .allow(null, '')
+  .messages({
     'string.empty': `"Department" cannot be empty`,
   }),
+
 });
 //login
 const loginSchema = Joi.object({
@@ -324,9 +329,8 @@ const createUservalidator = Joi.object({
     'string.empty': `"Role" cannot be empty`,
     'any.required': `"Role" is required`,
   }),
-  departmentId: Joi.number().integer().required().messages({
-    'number.base': 'departmentId must be a number.',
-    'any.required': 'departmentId is required.',
+  departmentId: Joi.number().optional().allow(null).messages({
+    'number.base': `"Department ID" must be a number`,
   }),
 });
  

@@ -24,6 +24,14 @@ const createUser = async (req, res) => {
     if (!roleData) {
       return res.status(400).json({ message: 'Invalid role' });
     }
+    let finalDepartmentId = departmentId;
+    if (!departmentId) {
+      const generalDepartment = await Department.findOne({ where: { name: 'General department' } });
+      if (!generalDepartment) {
+        return res.status(400).json({ message: 'Default department "General" not found' });
+      }
+      finalDepartmentId = generalDepartment.id;
+    }
     const hashedPassword = await bcryptHelper.hashPassword(password);
     const newUser = await User.create({
       firstname,
@@ -32,7 +40,7 @@ const createUser = async (req, res) => {
       password: hashedPassword,
       isVerified: false,
       roleId: roleData.id,
-      departmentId,
+      departmentId: finalDepartmentId,
       terms,
     });
     const tokenPayload = { id: newUser.id, email: newUser.email, firstname: newUser.firstname, lastname: newUser.lastname };
