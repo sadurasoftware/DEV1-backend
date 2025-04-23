@@ -89,7 +89,7 @@ const assignTicket = async (req, res) => {
     }
     ticket.assignedTo = assignedUser.id;
     await ticket.save();
-    const ticketUrl = `${process.env.TICKET_ASSIGN_URL}/assigned-ticket/${ticket.id}`
+    const ticketUrl = `${process.env.TICKET_ASSIGN_URL}/tickets?ticketId=${ticket.id}`
     await emailHelper.ticketAssignedEmail(assignedUser.email, assignedUser.firstname, ticket.id, ticket.title, ticket.description,ticketUrl);
     return res.status(200).json({ message: 'Ticket assigned successfully', ticket });
   } catch (error) {
