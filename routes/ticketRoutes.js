@@ -4,9 +4,23 @@ const ticketController = require('../controllers/ticketController');
 const {upload} = require('../utils/fileHelper');
 const validator=require('../validator/router-validator')
 const { authenticateToken } = require('../middlewares/authMiddleware');
+const {checkPermission,checkRole}=require('../middlewares/checkRole');
 const multer = require('multer');
+const { Ticket } = require('../models');
+
+const setTicketIdFromParams = async (req, res, next) => {
+  try {
+    const ticket = await Ticket.findByPk(req.params.id);
+    if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
+
+    req.ticketId = ticket.id; 
+    next();
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
 const uploadFile = (req, res, next) => {
-    const uploadSingle = upload.single('attachment');
+    const uploadSingle = upload.single('attachments');
     uploadSingle(req, res, function (err) {
       if (err instanceof multer.MulterError) {
         return res.status(400).json({ message: `Multer error: ${err.message}` });
@@ -16,20 +30,35 @@ const uploadFile = (req, res, next) => {
       next();
     });
   };
-router.post('/create', authenticateToken, uploadFile,validator.createTicketSchemaValidator,ticketController.createTicket);
-router.patch('/assign-ticket/:id',validator.assignTicketParamsSchemaValidator,validator.assignTicketSchemaValidator,ticketController.assignTicket)
+  const uploadMultipleFile = (req, res, next) => {
+    const uploadMultiple = upload.array('attachments', 2); 
+  
+    uploadMultiple(req, res, function (err) {
+      if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+          return res.status(400).json({ message: 'Only 2 attachments are allowed' });
+        }
+        return res.status(400).json({ message: `Multer error: ${err.message}` });
+      } else if (err) {
+        return res.status(400).json({ message: err.message });
+      }
+      next();
+    });
+  };
+router.post('/create', authenticateToken, uploadMultipleFile,checkPermission("Ticket","create"),validator.createTicketSchemaValidator,ticketController.createTicket);
+router.patch('/assign-ticket/:id',authenticateToken,validator.assignTicketParamsSchemaValidator,validator.assignTicketSchemaValidator,ticketController.assignTicket)
 router.get('/support-team',ticketController.getSupportTeamUsers);
 //router.get('/get-tickets/support-team-user',authenticateToken,ticketController.getTickets);
-router.get('/user-tickets/:userId',validator.getUserByTicketsSchemaValidator,ticketController.getTicketsByUser);
+router.get('/user-tickets/:userId',authenticateToken,checkRole('superadmin','admin'),validator.getUserByTicketsSchemaValidator,ticketController.getTicketsByUser);
 router.get('/user-solved-tickets/:userId',ticketController.getSolvedTicketsByUser);
-router.get('/get-all-tickets',ticketController.getAllTickets);
+router.get('/get-all-tickets',authenticateToken,checkRole('superadmin','admin'),ticketController.getAllTickets);
 router.get('/get-ticket/:id',validator.getTicketByIdSchemaValidator,ticketController.getTicketById);
 router.put('/update-ticket-status/:id',authenticateToken,validator.updateTicketStatusParamsSchemaValidator,validator.updateTicketStatusSchemaValidator,ticketController.updateTicketStatus);
 router.get('/tickets-status-count',ticketController.getTicketStatusCount);
-router.get('/view-ticket/:id',validator.viewTicketSchemaValidator, ticketController.viewTicket);
-router.put('/update-ticket/:id',validator.updateTicketParamsSchemaValidator,validator.updateTicketSchemaValidator,ticketController.updateTicket);
-router.delete('/delete-ticket/:id',validator.deleteTicketSchemaValidator,ticketController.deleteTicket);
-router.get('/export', validator.exportTicketsSchemaValidator, ticketController.exportTickets);
+router.get('/view-ticket/:id',authenticateToken,checkPermission("Ticket","read"),validator.viewTicketSchemaValidator, ticketController.viewTicket);
+router.put('/update-ticket/:id',setTicketIdFromParams,authenticateToken,uploadMultipleFile,checkPermission("Ticket","write"),validator.updateTicketParamsSchemaValidator,validator.updateTicketSchemaValidator,ticketController.updateTicket);
+router.delete('/delete-ticket/:id',authenticateToken,checkPermission("Ticket","delete"),validator.deleteTicketSchemaValidator,ticketController.deleteTicket);
+router.get('/export',authenticateToken,checkRole('superadmin','admin'),validator.exportTicketsSchemaValidator, ticketController.exportTickets);
 
 router.put('/category/update/:id',ticketController.updateCategory);
 router.delete('/category/delete/:id',ticketController.deleteCategory);

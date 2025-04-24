@@ -22,24 +22,33 @@ const checkRole = (...requiredRoles) => {
 const checkPermission = (moduleName, permissionName) => {
   return async (req, res, next) => {
     try {
-      const { roleId } = req.user; 
-      const module = await Module.findOne({ where: { name: moduleName } });
-      if (!module) return res.status(404).json({ message: "Module not found." });
+      const { roleId } = req.user;
+      const [role, module, permission] = await Promise.all([
+        Role.findByPk(roleId),
+        Module.findOne({ where: { name: moduleName } }),
+        Permission.findOne({ where: { name: permissionName } }),
+      ]);
 
-      const permission = await Permission.findOne({ where: { name: permissionName } });
+      if (!role) return res.status(404).json({ message: "Role not found." });
+      if (!module) return res.status(404).json({ message: "Module not found." });
       if (!permission) return res.status(404).json({ message: "Permission not found." });
 
       const rolePermission = await RoleModulePermission.findOne({
-        where: { roleId, moduleId: module.id, permissionId: permission.id, status: true },
+        where: {
+          roleId: role.id,
+          moduleId: module.id,
+          permissionId: permission.id,
+          status: true,
+        },
       });
 
       if (!rolePermission) {
         return res.status(403).json({
           message: "Access denied.",
-          details: `Your role (ID: ${roleId}) does not have the '${permissionName}' permission for the '${moduleName}' module.`,
+          details: `Your role '${role.name}'does not have the '${permission.name}' permission for the '${module.name}' module.`,
         });
       }
-      
+
       next();
     } catch (error) {
       console.error("Permission check failed:", error);

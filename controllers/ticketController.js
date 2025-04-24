@@ -1,8 +1,8 @@
-const {Ticket,Role,User,Category,Department,Comment} = require('../models');
+const {Ticket,Role,User,Category,Department,Comment,TicketAttachment} = require('../models');
 const { Sequelize } = require('sequelize');
 const { Op } = require('sequelize');
 const emailHelper = require('../utils/emailHelper');
-const { deleteS3Folder,getImageUrl  } = require('../utils/fileHelper');
+const { deleteS3Folder,getImageUrl} = require('../utils/fileHelper');
 const { Parser } = require('json2csv'); 
 const ExcelJS = require('exceljs'); 
 const PDFDocument = require('pdfkit');
@@ -24,22 +24,40 @@ const createTicket = async (req, res) => {
     if (!categoryData) {
       return res.status(404).json({ message: 'Category not found' });
     }
-    let attachment = null;
-    if (req.file && req.file.key) {
-      attachment = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${req.file.key}`;
-    }
+    // let attachment = null;
+    // if (req.file && req.file.key) {
+    //   attachment = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${req.file.key}`;
+    // }
     const ticket = await Ticket.create({
       id: ticketId,
       title,
       description,
-      attachment,
+      //attachment,
       priority,
       categoryId: categoryData.id,
       createdBy,
       assignedTo:null,
     });
-    return res.status(201).json({ message: 'Ticket created successfully', ticket });
+    let attachmentUrls = [];
+
+    // Save attachments if files exist
+    if (req.files && req.files.length > 0) {
+      const attachments = req.files.map(file => {
+        const url = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${file.key}`;
+        attachmentUrls.push(url);
+
+        return {
+          ticketId: ticket.id,
+          url
+        };
+      });
+
+      await TicketAttachment.bulkCreate(attachments);
+    }
+
+    return res.status(201).json({ message: 'Ticket created successfully', ticket ,attachments: attachmentUrls});
   } catch (error) {
+    console.log(error)
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -89,7 +107,7 @@ const assignTicket = async (req, res) => {
     }
     ticket.assignedTo = assignedUser.id;
     await ticket.save();
-    const ticketUrl = `${process.env.TICKET_ASSIGN_URL}/assigned-ticket/${ticket.id}`
+    const ticketUrl = `${process.env.TICKET_ASSIGN_URL}/tickets?ticketId=${ticket.id}`
     await emailHelper.ticketAssignedEmail(assignedUser.email, assignedUser.firstname, ticket.id, ticket.title, ticket.description,ticketUrl);
     return res.status(200).json({ message: 'Ticket assigned successfully', ticket });
   } catch (error) {
@@ -275,12 +293,17 @@ const getTicketById = async (req, res) => {
           model: User,
           as: 'assignedUser',  
           attributes: ['id', 'firstname']
+        },
+        {
+          model: TicketAttachment,
+          as: 'attachments',
+          attributes: ['id', 'url', 'createdAt']
         }
       ],
     });
 
     if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
-    return res.status(200).json({ ticket });
+    return res.status(200).json({message: 'Ticket fetched successfully',ticket });
   } catch (error) {
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -339,35 +362,55 @@ const getTicketStatusCount = async (req, res) => {
 };
 const updateTicket = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { title, description, priority, category} = req.body;
-    const ticket = await Ticket.findByPk(id);
+    const ticketId = req.params.id;
+    const { title, description, priority, category, status, assignedTo } = req.body;
+
+    const ticket = await Ticket.findByPk(ticketId);
     if (!ticket) {
       return res.status(404).json({ message: 'Ticket not found' });
     }
-    let categoryData = null;
+    let categoryId = ticket.categoryId;
     if (category) {
-      categoryData = await Category.findOne({ where: { name: category } });
+      const categoryData = await Category.findOne({ where: { name: category } });
       if (!categoryData) {
         return res.status(404).json({ message: 'Category not found' });
       }
+      categoryId = categoryData.id;
     }
-    // let assignedUser = null;
-    // if (assignedTo) {
-    //   assignedUser = await User.findByPk(assignedTo);
-    //   if (!assignedUser) {
-    //     return res.status(404).json({ message: 'Assigned user not found' });
-    //   }
-    // }
     await ticket.update({
       title: title || ticket.title,
       description: description || ticket.description,
       priority: priority || ticket.priority,
-      categoryId: categoryData ? categoryData.id : ticket.categoryId,
-      // assignedTo: assignedUser ? assignedUser.id : ticket.assignedTo,
+      status: status || ticket.status,
+      assignedTo: assignedTo || ticket.assignedTo,
+      categoryId
     });
-    return res.status(200).json({ message: 'Ticket updated successfully', ticket });
+
+    let newAttachmentUrls = [];
+    if (req.files && req.files.length > 0) {
+      const attachments = req.files.map(file => {
+        const url = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${file.key}`;
+        newAttachmentUrls.push(url);
+        return {
+          ticketId: ticket.id,
+          url
+        };
+      });
+      await TicketAttachment.bulkCreate(attachments);
+    }
+    const allAttachments = await TicketAttachment.findAll({
+      where: { ticketId: ticket.id },
+      attributes: ['url']
+    });
+    const allUrls = allAttachments.map(att => att.url);
+    return res.status(200).json({
+      message: 'Ticket updated successfully',
+      ticket,
+      attachments: allUrls,
+      newUploaded: newAttachmentUrls
+    });
   } catch (error) {
+    console.error('Update Ticket Error:', error);
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
