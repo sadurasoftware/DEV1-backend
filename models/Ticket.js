@@ -15,10 +15,6 @@ const Ticket = sequelize.define('Ticket', {
     type: DataTypes.TEXT,
     allowNull: false
   },
-  attachment: {
-    type: DataTypes.STRING, 
-    defaultValue: null
-  },
   priority: {
     type: DataTypes.ENUM("Low", "Medium", "High"),
     allowNull: false
@@ -56,6 +52,10 @@ Ticket.associate = (models) => {
   Ticket.hasMany(models.Comment, {
     foreignKey: 'ticketId',
     as: 'comments', 
+  });
+  Ticket.hasMany(models.TicketAttachment, {
+    foreignKey: 'ticketId',
+    as: 'attachments',
   });
 };
 
