@@ -57,7 +57,7 @@ const ticketAssignedEmail = async (to, firstname, ticketId, title, description,t
                 <p style="font-size: 16px; color: #333;"><strong>Title:</strong> ${title}</p>
                 <p style="font-size: 16px; color: #333;"><strong>Description:</strong> ${description}</p>
                 <p style="text-align: left;">
-                    <a href="${ticketUrl}" style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">View Ticket</a>
+                    <a href="https://dev-1-backend.vercel.app/view-ticket/${ticketId}" style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">View Ticket</a>
                 </p>
                 <p style="font-size: 16px; color: #333;">Please take necessary actions as soon as possible.</p>
             </div>`
