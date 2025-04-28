@@ -57,6 +57,10 @@ Ticket.associate = (models) => {
     foreignKey: 'ticketId',
     as: 'attachments',
   });
+  Ticket.hasMany(models.TicketHistory, {
+    foreignKey: 'ticketId',
+    as: 'history',
+  });
 };
 
 
