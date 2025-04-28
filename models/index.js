@@ -10,8 +10,8 @@ const Category = require('./Category');
 const Ticket = require('./Ticket');
 const Comment = require('./Comment')
 const TicketAttachment = require('./TicketAttachment');
-const models = { User, Role, Permission, Module, RoleModulePermission, Department,Category, Ticket,Comment ,TicketAttachment};
-
+const TicketHistory = require('./TicketHistory');
+const models = { User, Role, Permission, Module, RoleModulePermission, Department,Category, Ticket,Comment ,TicketAttachment,TicketHistory};
 Object.keys(models).forEach((modelName) => {
   if (models[modelName].associate) {
     models[modelName].associate(models);
