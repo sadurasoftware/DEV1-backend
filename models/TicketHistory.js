@@ -1,0 +1,34 @@
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
+
+const TicketHistory = sequelize.define('TicketHistory', {
+    ticketId: {
+      type: DataTypes.UUID,
+      allowNull: false,
+    },
+    action: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    oldValue: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    newValue: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    changedBy: {
+      type: DataTypes.INTEGER, 
+      allowNull: false,
+    }
+  }, {
+    timestamps: true
+  });
+  
+    TicketHistory.associate = (models) => {
+    TicketHistory.belongsTo(models.User, { foreignKey: 'changedBy', as: 'user' });
+  };
+
+  
+module.exports = TicketHistory;

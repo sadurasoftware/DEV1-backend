@@ -1,4 +1,4 @@
-const {Ticket,Role,User,Category,Department,Comment,TicketAttachment} = require('../models');
+const {Ticket,Role,User,Category,Department,Comment,TicketAttachment,TicketHistory} = require('../models');
 const { Sequelize } = require('sequelize');
 const { Op } = require('sequelize');
 const emailHelper = require('../utils/emailHelper');
@@ -54,7 +54,13 @@ const createTicket = async (req, res) => {
 
       await TicketAttachment.bulkCreate(attachments);
     }
-
+    await TicketHistory.create({
+      ticketId: ticket.id,
+      action: 'Ticket Created',
+      oldValue: null,
+      newValue: `Created with status ${ticket.status}`,
+      changedBy: createdBy,
+    })
     return res.status(201).json({ message: 'Ticket created successfully', ticket ,attachments: attachmentUrls});
   } catch (error) {
     console.log(error)
@@ -82,6 +88,7 @@ const assignTicket = async (req, res) => {
   try {
     const { id } = req.params;
     const { assignedTo } = req.body; 
+    const changedBy = req.user.id;
     const ticket = await Ticket.findByPk(id);
     if (!ticket) {
       return res.status(404).json({ message: 'Ticket not found' });
@@ -105,8 +112,16 @@ const assignTicket = async (req, res) => {
     if (!assignedUser) {
       return res.status(404).json({ message: 'Assigned user not found in Support Team' });
     }
+    const oldAssignedTo = ticket.assignedTo;
     ticket.assignedTo = assignedUser.id;
     await ticket.save();
+    await TicketHistory.create({
+      ticketId: ticket.id,
+      action: 'Assigned To',
+      oldValue: oldAssignedTo ? oldAssignedTo.toString() : null,
+      newValue: assignedUser.id.toString(),
+      changedBy
+    });
     const ticketUrl = `${process.env.TICKET_ASSIGN_URL}/tickets?ticketId=${ticket.id}`
     await emailHelper.ticketAssignedEmail(assignedUser.email, assignedUser.firstname, ticket.id, ticket.title, ticket.description,ticketUrl);
     return res.status(200).json({ message: 'Ticket assigned successfully', ticket });
@@ -331,8 +346,16 @@ const updateTicketStatus = async (req, res) => {
     if (user.department.name.toLowerCase().trim() !== 'support team department') {
       return res.status(403).json({ message: 'Unauthorized: Only Support Team can update status' });
     }
+    const oldStatus = ticket.status;
     ticket.status = status;
     await ticket.save();
+    await TicketHistory.create({
+      ticketId: ticket.id,
+      action: 'Status Updated',
+      oldValue: oldStatus,
+      newValue: status,
+      changedBy: userId
+    });
     return res.status(200).json({ message: 'Status updated', ticket });
   } catch (error) {
     console.error('Error updating ticket status:', error.message);
@@ -363,27 +386,61 @@ const getTicketStatusCount = async (req, res) => {
 const updateTicket = async (req, res) => {
   try {
     const ticketId = req.params.id;
-    const { title, description, priority, category } = req.body;
-
+    const { title, description, priority, category} = req.body;
+    const changedBy = req.user.id;
     const ticket = await Ticket.findByPk(ticketId);
     if (!ticket) {
       return res.status(404).json({ message: 'Ticket not found' });
     }
-    let categoryId = ticket.categoryId;
+    const updates = {};
+    const historyEntries = [];
+    if (title && title !== ticket.title) {
+      historyEntries.push({
+        action: 'Title Updated',
+        oldValue: JSON.stringify({ title: ticket.title }),
+        newValue: JSON.stringify({ title }),
+        ticketId,
+        changedBy
+      });
+      updates.title = title;
+    }
+    if (description && description !== ticket.description) {
+      historyEntries.push({
+        action: 'Description Updated',
+        oldValue: JSON.stringify({ description: ticket.description }),
+        newValue: JSON.stringify({ description }),
+        ticketId,
+        changedBy
+      });
+      updates.description = description;
+    }
+    if (priority && priority !== ticket.priority) {
+      historyEntries.push({
+        action: 'Priority Updated',
+        oldValue: JSON.stringify({ priority: ticket.priority }),
+        newValue: JSON.stringify({ priority }),
+        ticketId,
+        changedBy
+      });
+      updates.priority = priority;
+    }
     if (category) {
       const categoryData = await Category.findOne({ where: { name: category } });
       if (!categoryData) {
         return res.status(404).json({ message: 'Category not found' });
       }
-      categoryId = categoryData.id;
+      if (categoryData.id !== ticket.categoryId) {
+        historyEntries.push({
+          action: 'Category Updated',
+          oldValue: JSON.stringify({ categoryId: ticket.categoryId }),
+          newValue: JSON.stringify({ categoryId: categoryData.id }),
+          ticketId,
+          changedBy
+        });
+        updates.categoryId = categoryData.id;
+      }
     }
-    await ticket.update({
-      title: title || ticket.title,
-      description: description || ticket.description,
-      priority: priority || ticket.priority,
-      categoryId
-    });
-
+    await ticket.update(updates);
     let newAttachmentUrls = [];
     if (req.files && req.files.length > 0) {
       const attachments = req.files.map(file => {
@@ -395,6 +452,16 @@ const updateTicket = async (req, res) => {
         };
       });
       await TicketAttachment.bulkCreate(attachments);
+      historyEntries.push({
+        action: 'New Attachments Added',
+        oldValue: null,
+        newValue: JSON.stringify({ attachments: newAttachmentUrls }),
+        ticketId,
+        changedBy
+      });
+    }
+    if (historyEntries.length > 0) {
+      await TicketHistory.bulkCreate(historyEntries);
     }
     const allAttachments = await TicketAttachment.findAll({
       where: { ticketId: ticket.id },
@@ -412,6 +479,7 @@ const updateTicket = async (req, res) => {
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
 const viewTicket = async (req, res) => {
   try {
     const { id } = req.params;
@@ -477,10 +545,23 @@ const viewTicket = async (req, res) => {
 const deleteTicket = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user.id;
     const ticket = await Ticket.findByPk(id);
     if (!ticket) {
       return res.status(404).json({ message: 'Ticket not found' });
     }
+    await TicketHistory.create({
+      ticketId: ticket.id,
+      action: 'Ticket Deleted',
+      oldValue: JSON.stringify({
+        title: ticket.title,
+        description: ticket.description,
+        priority: ticket.priority,
+        status: ticket.status
+      }),
+      newValue: null,
+      changedBy: userId
+    });
     await deleteS3Folder(id);
 
     await ticket.destroy();
@@ -645,6 +726,50 @@ const deleteCategory = async (req, res) => {
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+const getTicketHistory = async (req, res) => {
+  try {
+    const { ticketId } = req.params;
+
+    const history = await TicketHistory.findAll({
+      where: { ticketId },
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['firstname', 'lastname']
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+    const tryParseJSON = (value) => {
+      if (!value) return null;
+      if (typeof value === 'string' && (value.trim().startsWith('{') || value.trim().startsWith('['))) {
+        try {
+          return JSON.parse(value);
+        } catch {
+          return value;
+        }
+      }
+      return value;
+    };
+
+    const formattedHistory = history.map(entry => ({
+      id: entry.id,
+      action: entry.action,
+      oldValue: tryParseJSON(entry.oldValue),
+      newValue: tryParseJSON(entry.newValue),
+      changedBy: `${entry.user.firstname} ${entry.user.lastname}`,
+      changedAt: entry.createdAt
+    }));
+
+    return res.status(200).json({ history: formattedHistory });
+
+  } catch (error) {
+    console.error('Error fetching ticket history:', error);
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
 
 module.exports = {
   createTicket,
@@ -662,6 +787,7 @@ module.exports = {
   deleteTicket,
   exportTickets,
   getImage,
+  getTicketHistory,
 
   updateCategory,
   deleteCategory

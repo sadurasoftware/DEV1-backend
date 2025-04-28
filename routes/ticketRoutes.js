@@ -54,12 +54,12 @@ router.get('/user-solved-tickets/:userId',ticketController.getSolvedTicketsByUse
 router.get('/get-all-tickets',authenticateToken,checkRole('superadmin','admin'),ticketController.getAllTickets);
 router.get('/get-ticket/:id',validator.getTicketByIdSchemaValidator,ticketController.getTicketById);
 router.put('/update-ticket-status/:id',authenticateToken,validator.updateTicketStatusParamsSchemaValidator,validator.updateTicketStatusSchemaValidator,ticketController.updateTicketStatus);
-router.get('/tickets-status-count',ticketController.getTicketStatusCount);
+router.get('/dashboard',ticketController.getTicketStatusCount);
 router.get('/view-ticket/:id',authenticateToken,checkPermission("Ticket","read"),validator.viewTicketSchemaValidator, ticketController.viewTicket);
 router.put('/update-ticket/:id',setTicketIdFromParams,authenticateToken,uploadMultipleFile,checkPermission("Ticket","write"),validator.updateTicketParamsSchemaValidator,ticketController.updateTicket);
 router.delete('/delete-ticket/:id',authenticateToken,checkPermission("Ticket","delete"),validator.deleteTicketSchemaValidator,ticketController.deleteTicket);
 router.get('/export',authenticateToken,checkRole('superadmin','admin'),validator.exportTicketsSchemaValidator, ticketController.exportTickets);
-
+router.get('/:ticketId/history', ticketController.getTicketHistory);
 router.put('/category/update/:id',ticketController.updateCategory);
 router.delete('/category/delete/:id',ticketController.deleteCategory);
 router.get('/get-image/:ticketId/:filename',validator.getImageSchemaValidator,ticketController.getImage);
