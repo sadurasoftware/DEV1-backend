@@ -363,7 +363,7 @@ const getTicketStatusCount = async (req, res) => {
 const updateTicket = async (req, res) => {
   try {
     const ticketId = req.params.id;
-    const { title, description, priority, category, status, assignedTo } = req.body;
+    const { title, description, priority, category } = req.body;
 
     const ticket = await Ticket.findByPk(ticketId);
     if (!ticket) {
@@ -381,8 +381,6 @@ const updateTicket = async (req, res) => {
       title: title || ticket.title,
       description: description || ticket.description,
       priority: priority || ticket.priority,
-      status: status || ticket.status,
-      assignedTo: assignedTo || ticket.assignedTo,
       categoryId
     });
 
