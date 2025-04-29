@@ -10,10 +10,6 @@ const Comment = sequelize.define('Comment',{
       type: DataTypes.TEXT,
       allowNull: false
     },
-    attachment: {
-      type: DataTypes.STRING,
-      allowNull: true
-    },
     updatedBy: {
       type: DataTypes.INTEGER,
       allowNull: false
@@ -33,6 +29,10 @@ Comment.associate = (models) => {
   Comment.belongsTo(models.User, {
     foreignKey: 'updatedBy',
     as: 'commenter'
+  });
+  Comment.hasMany(models.CommentAttachment, {
+    foreignKey: 'commentId',
+    as: 'attachments'
   });
 };
 

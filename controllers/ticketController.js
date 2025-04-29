@@ -550,6 +550,14 @@ const deleteTicket = async (req, res) => {
     if (!ticket) {
       return res.status(404).json({ message: 'Ticket not found' });
     }
+    const attachments = await TicketAttachment.findAll({ where: { ticketId: id } });
+    for (const attachment of attachments) {
+      const url = new URL(attachment.url);
+      const key = decodeURIComponent(url.pathname.substring(1));
+      await deleteFileFromS3(key);
+    }
+    await TicketAttachment.destroy({ where: { ticketId: id } });
+    await deleteS3Folder(id);
     await TicketHistory.create({
       ticketId: ticket.id,
       action: 'Ticket Deleted',
@@ -557,16 +565,14 @@ const deleteTicket = async (req, res) => {
         title: ticket.title,
         description: ticket.description,
         priority: ticket.priority,
-        status: ticket.status
+        status: ticket.status,
       }),
       newValue: null,
-      changedBy: userId
+      changedBy: userId,
     });
-    await deleteS3Folder(id);
-
     await ticket.destroy();
-    
-    return res.status(200).json({ message: 'Ticket and associated S3 files deleted successfully' });
+    return res.status(200).json({ message: 'Ticket, attachments, and S3 files deleted successfully' });
+
   } catch (error) {
     console.error('Error deleting ticket:', error);
     return res.status(500).json({ message: 'Server error', error: error.message });
