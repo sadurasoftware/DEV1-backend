@@ -174,8 +174,8 @@ const getTicketComments = async (req, res) => {
       const attachments = await CommentAttachment.findAll({
         where: { commentId }
       });
-      if (comment.attachments && comment.attachments.length > 0) {
-        for (const attachment of comment.attachments) {
+      for (const attachment of attachments) {
+        if (attachment.url) {
           const url = new URL(attachment.url);
           const key = decodeURIComponent(url.pathname.substring(1)); 
           await deleteFileFromS3(key);
@@ -189,7 +189,6 @@ const getTicketComments = async (req, res) => {
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   };
-
   const getCommentById = async (req, res) => {
     try {
       const { commentId } = req.params;
