@@ -64,11 +64,12 @@ const loginSchema = Joi.object({
     'string.email': 'Please provide a valid email address',
     'any.required': 'Email is required',
   }),
-  password: Joi.string().pattern(passwordRegex).required().messages({
-    'string.empty': 'Password is required',
-      'string.pattern.base': 'Password must be at least 8 characters long, include uppercase, lowercase, number, and special character',
+  password: Joi.string()
+    .required()
+    .messages({
+      'string.empty': 'Password is required',
       'any.required': 'Password is required',
-  }),
+    }),
 });
 
 //forgetpassword

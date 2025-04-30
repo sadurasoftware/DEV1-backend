@@ -2,7 +2,7 @@ const {Ticket,Role,User,Category,Department,Comment,TicketAttachment,TicketHisto
 const { Sequelize } = require('sequelize');
 const { Op } = require('sequelize');
 const emailHelper = require('../utils/emailHelper');
-const { deleteS3Folder,getImageUrl} = require('../utils/fileHelper');
+const { deleteS3Folder,deleteFileFromS3,getImageUrl} = require('../utils/fileHelper');
 const { Parser } = require('json2csv'); 
 const ExcelJS = require('exceljs'); 
 const PDFDocument = require('pdfkit');
