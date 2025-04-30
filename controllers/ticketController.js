@@ -1,4 +1,4 @@
-const {Ticket,Role,User,Category,Department,Comment,TicketAttachment,TicketHistory} = require('../models');
+const {Ticket,Role,User,Category,Department,Comment,TicketAttachment,TicketHistory,CommentAttachment} = require('../models');
 const { Sequelize } = require('sequelize');
 const { Op } = require('sequelize');
 const emailHelper = require('../utils/emailHelper');
@@ -87,8 +87,8 @@ const getImage = async (req, res) => {
 const assignTicket = async (req, res) => {
   try {
     const { id } = req.params;
-    const { assignedTo } = req.body; 
-    const changedBy = req.user.id;
+    const { assignedTo } = req.body;
+    const changedBy = req.user.id; 
     const ticket = await Ticket.findByPk(id);
     if (!ticket) {
       return res.status(404).json({ message: 'Ticket not found' });
@@ -108,27 +108,41 @@ const assignTicket = async (req, res) => {
         departmentId: supportDept.id
       }
     });
-
     if (!assignedUser) {
       return res.status(404).json({ message: 'Assigned user not found in Support Team' });
     }
-    const oldAssignedTo = ticket.assignedTo;
+    let oldAssignedUserName = null;
+    if (ticket.assignedTo) {
+      const oldAssignedUser = await User.findByPk(ticket.assignedTo);
+      if (oldAssignedUser) {
+        oldAssignedUserName = `${oldAssignedUser.firstname} ${oldAssignedUser.lastname}`;
+      }
+    }
     ticket.assignedTo = assignedUser.id;
     await ticket.save();
     await TicketHistory.create({
       ticketId: ticket.id,
       action: 'Assigned To',
-      oldValue: oldAssignedTo ? oldAssignedTo.toString() : null,
-      newValue: assignedUser.id.toString(),
+      oldValue: oldAssignedUserName,
+      newValue: `${assignedUser.firstname} ${assignedUser.lastname}`,
       changedBy
     });
-    const ticketUrl = `${process.env.TICKET_ASSIGN_URL}/tickets?ticketId=${ticket.id}`
-    await emailHelper.ticketAssignedEmail(assignedUser.email, assignedUser.firstname, ticket.id, ticket.title, ticket.description,ticketUrl);
+
+    const ticketUrl = `${process.env.TICKET_ASSIGN_URL}/assigned-ticket/${ticket.id}`;
+    await emailHelper.ticketAssignedEmail(
+      assignedUser.email,
+      assignedUser.firstname,
+      ticket.id,
+      ticket.title,
+      ticket.description,
+      ticketUrl
+    );
     return res.status(200).json({ message: 'Ticket assigned successfully', ticket });
   } catch (error) {
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
 const getSupportTeamUsers = async (req, res) => {
   try {
     const supportDepartment = await Department.findOne({
@@ -550,14 +564,27 @@ const deleteTicket = async (req, res) => {
     if (!ticket) {
       return res.status(404).json({ message: 'Ticket not found' });
     }
-    const attachments = await TicketAttachment.findAll({ where: { ticketId: id } });
-    for (const attachment of attachments) {
+    const ticketAttachments = await TicketAttachment.findAll({ where: { ticketId: id } });
+    for (const attachment of ticketAttachments) {
       const url = new URL(attachment.url);
       const key = decodeURIComponent(url.pathname.substring(1));
       await deleteFileFromS3(key);
     }
     await TicketAttachment.destroy({ where: { ticketId: id } });
-    await deleteS3Folder(id);
+    const comments = await Comment.findAll({ where: { ticketId: id } });
+    for (const comment of comments) {
+      const commentAttachments = await CommentAttachment.findAll({ where: { commentId: comment.id } });
+      for (const attachment of commentAttachments) {
+        const url = new URL(attachment.url);
+        const key = decodeURIComponent(url.pathname.substring(1));
+        await deleteFileFromS3(key);
+      }
+      await CommentAttachment.destroy({ where: { commentId: comment.id } });
+    }
+    await Comment.destroy({ where: { ticketId: id } });
+
+    await TicketHistory.destroy({ where: { ticketId: id } });
+
     await TicketHistory.create({
       ticketId: ticket.id,
       action: 'Ticket Deleted',
@@ -571,8 +598,10 @@ const deleteTicket = async (req, res) => {
       changedBy: userId,
     });
     await ticket.destroy();
-    return res.status(200).json({ message: 'Ticket, attachments, and S3 files deleted successfully' });
 
+    await deleteS3Folder(id);
+
+    return res.status(200).json({ message: 'Ticket, comments, attachments, and S3 files deleted successfully' });
   } catch (error) {
     console.error('Error deleting ticket:', error);
     return res.status(500).json({ message: 'Server error', error: error.message });
