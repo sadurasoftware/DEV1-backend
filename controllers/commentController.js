@@ -1,4 +1,4 @@
-const {Ticket, User,Role,Comment,CommentAttachment} = require('../models');
+const {Ticket, User,Role,Comment,CommentAttachment,Department} = require('../models');
 const { deleteFileFromS3 } = require('../utils/fileHelper');
 const path = require('path');
 const addComment = async (req, res) => {
@@ -10,9 +10,20 @@ const addComment = async (req, res) => {
     if (!ticket) {
       return res.status(404).json({ message: 'Ticket not found' });
     }
-    if (ticket.assignedTo !== userId) {
+    const user = await User.findByPk(userId, {
+      include: {
+        model: Department,
+        as: 'department',
+        attributes: ['name'],
+      },
+    });
+    if (
+      ticket.createdBy !== userId &&
+      ticket.assignedTo !== userId &&
+      user?.department?.name.toLowerCase().trim() !== 'support team department'
+    ) {
       return res.status(403).json({
-        message: 'You are not authorized to comment on this ticket. Only the assigned support member can comment.',
+        message: 'You are not authorized to comment. Only the assigned user, ticket creator, or support team members can comment.',
       });
     }
     const comment = await Comment.create({
@@ -59,7 +70,6 @@ const addComment = async (req, res) => {
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
-
 const updateComment = async (req, res) => {
   try {
     const { ticketId, commentId } = req.params;
@@ -73,8 +83,24 @@ const updateComment = async (req, res) => {
     if (!comment) {
       return res.status(404).json({ message: 'Comment not found' });
     }
+    const user = await User.findByPk(userId, {
+      include: {
+        model: Department,
+        as: 'department',
+        attributes: ['name'],
+      },
+    });
+    const isTicketCreator = ticket.createdBy === userId;
+    const isAssignedUser = ticket.assignedTo === userId;
+    const isSupportTeam = user?.department?.name.toLowerCase().trim() === 'support team department';
+
+    if (!isTicketCreator && !isAssignedUser && !isSupportTeam) {
+      return res.status(403).json({
+        message: 'Unauthorized: Only assigned user, ticket creator, or support team members can update the comment.',
+      });
+    }
     if (comment.updatedBy !== userId) {
-      return res.status(403).json({ message: 'You are not authorized to update this comment.' });
+      return res.status(403).json({ message: 'You can only update your own comments.' });
     }
     if (commentText) {
       comment.commentText = commentText;
@@ -85,13 +111,11 @@ const updateComment = async (req, res) => {
       const attachments = req.files.map(file => {
         const url = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${file.key}`;
         attachmentUrls.push(url);
-
         return {
           commentId: comment.id,
           url
         };
       });
-
       await CommentAttachment.bulkCreate(attachments);
     }
     const allAttachments = await CommentAttachment.findAll({
@@ -99,7 +123,7 @@ const updateComment = async (req, res) => {
       attributes: ['url']
     });
     const attachmentList = allAttachments.map(att => att.url);
-    const user = await User.findByPk(userId, {
+    const roleUser = await User.findByPk(userId, {
       include: {
         model: Role,
         as: 'role',
@@ -114,9 +138,9 @@ const updateComment = async (req, res) => {
         commentText: comment.commentText,
         attachments: attachmentList,
         updatedBy: {
-          id: user.id,
-          firstname: user.firstname,
-          role: user.role?.name || 'N/A',
+          id: roleUser.id,
+          firstname: roleUser.firstname,
+          role: roleUser.role?.name || 'N/A',
         },
         updatedAt: comment.updatedAt,
       },
@@ -126,6 +150,7 @@ const updateComment = async (req, res) => {
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
 const getTicketComments = async (req, res) => {
   try {
     const { ticketId } = req.params;

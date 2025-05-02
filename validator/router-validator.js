@@ -531,35 +531,32 @@ const updateTicketParamsSchema = Joi.object({
     }),
 });
 const updateTicketSchema = Joi.object({
-  title: Joi.string().min(3).max(50).required().messages({
+  title: Joi.string().min(3).max(50).optional().messages({
     'string.base': `"Title" should be a type of 'text'`,
     'string.empty': `"Title" cannot be empty`,
     'string.min': `"Title" should have at least {#limit} characters`,
     'string.max': `"Title" should have at most {#limit} characters`,
-    'any.required': `"Title" is required`,
   }),
-  description: Joi.string().min(3).max(50).required().messages({
+  description: Joi.string().min(3).max(50).optional().messages({
     'string.base': `"Description" should be a type of 'text'`,
     'string.empty': `"Description" cannot be empty`,
     'string.min': `"Description" should have at least {#limit} characters`,
     'string.max': `"Description" should have at most {#limit} characters`,
-    'any.required': `"Description" is required`,
   }),
   priority: Joi.string()
-  .valid("Low", "Medium", "High")
-  .required()
-  .messages({
-    'any.only': `"Priority" must be one of ["Low", "Medium", "High"]`,
-    'any.required': `"Priority" is required`,
+    .valid("Low", "Medium", "High")
+    .optional()
+    .messages({
+      'any.only': `"Priority" must be one of ["Low", "Medium", "High"]`,
+    }),
+  category: Joi.string().min(3).max(50).optional().messages({
+    'string.base': `"Category" should be a type of 'text'`,
+    'string.empty': `"Category" cannot be empty`,
+    'string.min': `"Category" should have at least {#limit} characters`,
+    'string.max': `"Category" should have at most {#limit} characters`,
   }),
-  category: Joi.string().min(3).max(50).required().messages({
-  'string.base': `"Category" should be a type of 'text'`,
-  'string.empty': `"Category" cannot be empty`,
-  'string.min': `"Category" should have at least {#limit} characters`,
-  'string.max': `"Category" should have at most {#limit} characters`,
-  'any.required': `"Category" is required`,
-   }),
 });
+
 const viewTicketSchema = Joi.object({
   id: Joi.string()
     .guid({ version: ['uuidv4', 'uuidv5'] }) 
@@ -634,7 +631,7 @@ const updatecommentSchemaParams =Joi.object({
   }),
 })
 const updatecommentSchema = Joi.object({
-  commentText: Joi.string().min(1).required().messages({
+  commentText: Joi.string().min(3).optional().required().messages({
     'string.empty': 'Comment text cannot be empty',
     'any.required': 'Comment text is required',
   }),
