@@ -360,7 +360,7 @@ const updateTicketStatus = async (req, res) => {
 
     if (!isAssignedUser && !isSupportTeam) {
       return res.status(403).json({
-        message: 'Unauthorized: Only the assigned user, ticket creator, or support team can update status'
+        message: 'Unauthorized: Only the assigned user,or support team can update status'
       });
     }
 

@@ -185,35 +185,48 @@ const getTicketComments = async (req, res) => {
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
-  const deleteComment = async (req, res) => {
-    const { commentId } = req.params;
-    const userId = req.user.id;
-    try {
-      const comment = await Comment.findByPk(commentId);
-      if (!comment) {
-        return res.status(404).json({ message: 'Comment not found' });
-      }
-      if (comment.updatedBy !== userId) {
-        return res.status(403).json({ message: 'You are not authorized to delete this comment' });
-      }
-      const attachments = await CommentAttachment.findAll({
-        where: { commentId }
-      });
-      for (const attachment of attachments) {
-        if (attachment.url) {
-          const url = new URL(attachment.url);
-          const key = decodeURIComponent(url.pathname.substring(1)); 
-          await deleteFileFromS3(key);
-        }
-      }
-      await CommentAttachment.destroy({ where: { commentId } });
-      await comment.destroy();
-      return res.status(200).json({ message: 'Comment and attachment deleted successfully' });
-    } catch (error) {
-      console.error('Delete comment error:', error);
-      res.status(500).json({ message: 'Server error', error: error.message });
+const deleteComment = async (req, res) => {
+  const { commentId } = req.params;
+  const userId = req.user.id;
+  try {
+    const comment = await Comment.findByPk(commentId);
+    if (!comment) {
+      return res.status(404).json({ message: 'Comment not found' });
     }
-  };
+    const ticket = await Ticket.findByPk(comment.ticketId);
+    if (!ticket) {
+      return res.status(404).json({ message: 'Ticket not found' });
+    }
+    const user = await User.findByPk(userId, {
+      include: { model: Department, as: 'department' }
+    });
+    const isAssignedUser = ticket.assignedTo === userId;
+    const isTicketCreator = ticket.createdBy === userId;
+    const isSupportTeam = user.department && user.department.name.toLowerCase().trim() === 'support team department';
+    const isCommentOwner = comment.updatedBy === userId;
+    if (!(isAssignedUser || isTicketCreator || isSupportTeam) || !isCommentOwner) {
+      return res.status(403).json({
+        message: 'Unauthorized: You can only delete your own comment if you are assigned, the ticket creator, or a support team member'
+      });
+    }
+    const attachments = await CommentAttachment.findAll({
+      where: { commentId }
+    });
+    for (const attachment of attachments) {
+      if (attachment.url) {
+        const url = new URL(attachment.url);
+        const key = decodeURIComponent(url.pathname.substring(1));
+        await deleteFileFromS3(key); 
+      }
+    }
+    await CommentAttachment.destroy({ where: { commentId } });
+    await comment.destroy();
+    return res.status(200).json({ message: 'Comment and attachments deleted successfully' });
+  } catch (error) {
+    console.error('Delete comment error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
   const getCommentById = async (req, res) => {
     try {
       const { commentId } = req.params;
