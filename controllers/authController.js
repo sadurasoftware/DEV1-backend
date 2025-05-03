@@ -82,7 +82,16 @@ const resendVerificationEmail = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ where: { email } });
+    const user = await User.findOne({
+      where: { email },
+      include: [
+        {
+          model: Department,
+          as: 'department',
+          attributes: ['id', 'name'],
+        },
+      ],
+    });
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -118,7 +127,21 @@ const login = async (req, res) => {
       //   if (!roleData) {
       //   return res.status(400).json({ message: 'Invalid role' });
       // }
-    return res.status(200).json({ token, user,permissions: permissionList});
+      const userData = {
+        id: user.id,
+        firstname: user.firstname,
+        lastname: user.lastname,
+        email: user.email,
+        roleId: user.roleId,
+        department: user.department ? user.department.name : null,
+        isVerified: user.isVerified,
+        terms: user.terms,
+      };
+      return res.status(200).json({
+        token,
+        user: userData,
+        permissions: permissionList
+      });
   } catch (error) {
     return res.status(500).json({message:'server error'});
   }

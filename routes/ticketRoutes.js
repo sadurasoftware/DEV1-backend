@@ -56,7 +56,7 @@ router.get('/get-ticket/:id',validator.getTicketByIdSchemaValidator,ticketContro
 router.put('/update-ticket-status/:id',authenticateToken,validator.updateTicketStatusParamsSchemaValidator,validator.updateTicketStatusSchemaValidator,ticketController.updateTicketStatus);
 router.get('/dashboard',ticketController.getTicketStatusCount);
 router.get('/view-ticket/:id',authenticateToken,checkPermission("Ticket","read"),validator.viewTicketSchemaValidator, ticketController.viewTicket);
-router.put('/update-ticket/:id',setTicketIdFromParams,authenticateToken,uploadMultipleFile,checkPermission("Ticket","write"),validator.updateTicketParamsSchemaValidator,ticketController.updateTicket);
+router.put('/update-ticket/:id',setTicketIdFromParams,authenticateToken,uploadMultipleFile,checkPermission("Ticket","write"),validator.updateTicketParamsSchemaValidator,validator.updateTicketSchemaValidator,ticketController.updateTicket);
 router.delete('/delete-ticket/:id',authenticateToken,checkPermission("Ticket","delete"),validator.deleteTicketSchemaValidator,ticketController.deleteTicket);
 router.get('/export',authenticateToken,checkRole('superadmin','admin'),validator.exportTicketsSchemaValidator, ticketController.exportTickets);
 router.get('/:ticketId/history', ticketController.getTicketHistory);

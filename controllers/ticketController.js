@@ -341,28 +341,33 @@ const updateTicketStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const userId = req.user.id; 
+    const userId = req.user.id;
 
     const allowedStatuses = ['Open', 'Pending', 'Resolved', 'Closed', 'In Progress'];
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({ message: 'Invalid status value' });
     }
-
     const ticket = await Ticket.findByPk(id);
     if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
-    const user = await User.findByPk(userId, { 
-      include: { model: Department, as: 'department' } 
+    const user = await User.findByPk(userId, {
+      include: { model: Department, as: 'department' }
     });
 
-    if (!user || !user.department) {
-      return res.status(403).json({ message: 'Unauthorized: User not in any department' });
+    if (!user) return res.status(403).json({ message: 'Unauthorized: User not found' });
+
+    const isAssignedUser = ticket.assignedTo === userId;
+    const isSupportTeam = user.department && user.department.name.toLowerCase().trim() === 'support team department';
+
+    if (!isAssignedUser && !isSupportTeam) {
+      return res.status(403).json({
+        message: 'Unauthorized: Only the assigned user, ticket creator, or support team can update status'
+      });
     }
-    if (user.department.name.toLowerCase().trim() !== 'support team department') {
-      return res.status(403).json({ message: 'Unauthorized: Only Support Team can update status' });
-    }
+
     const oldStatus = ticket.status;
     ticket.status = status;
     await ticket.save();
+
     await TicketHistory.create({
       ticketId: ticket.id,
       action: 'Status Updated',
@@ -370,7 +375,7 @@ const updateTicketStatus = async (req, res) => {
       newValue: status,
       changedBy: userId
     });
-    return res.status(200).json({ message: 'Status updated', ticket });
+    return res.status(200).json({ message: 'Status updated successfully', ticket });
   } catch (error) {
     console.error('Error updating ticket status:', error.message);
     return res.status(500).json({ message: 'Server error', error: error.message });
