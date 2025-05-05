@@ -20,15 +20,26 @@ const TicketHistory = sequelize.define('TicketHistory', {
     },
     changedBy: {
       type: DataTypes.INTEGER, 
-      allowNull: false,
+      allowNull: true,
     }
   }, {
     timestamps: true
   });
   
-    TicketHistory.associate = (models) => {
-    TicketHistory.belongsTo(models.User, { foreignKey: 'changedBy', as: 'user' });
+TicketHistory.associate = (models) => {
+    TicketHistory.belongsTo(models.User, {
+      foreignKey: 'changedBy',
+      as: 'user',
+      onDelete: 'SET NULL',
+      onUpdate: 'CASCADE',
+    });
+  
+    TicketHistory.belongsTo(models.Ticket, {
+      foreignKey: 'ticketId',
+      as: 'ticket',
+      onDelete: 'CASCADE',
+      onUpdate: 'CASCADE',
+    });
   };
-
   
 module.exports = TicketHistory;

@@ -14,7 +14,7 @@ const handleError = (res, error, message) => {
 
 const register = async (req, res) => {
   try {
-    const { firstname, lastname, email, password, terms, role, department } = req.body;
+    const { firstname, lastname, email, password, terms,department } = req.body;
     // if (password !== confirmPassword) {
     //   return res.status(400).json({ message: 'Passwords do not match' });
     // }
@@ -26,11 +26,10 @@ const register = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
-    const roleData = await Role.findOne({ where: { name: role } });
+    const roleData = await Role.findOne({ where: { name: 'superadmin' } });
     if (!roleData) {
-      return res.status(400).json({ message: 'Invalid role' });
+     res.status(400).json({ message: 'role not found' });
     }
-
     const departmentName = department || 'General department';
     const departmentData = await Department.findOne({ where: { name: departmentName } });
     if (!departmentData) {

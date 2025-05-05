@@ -1,11 +1,10 @@
-const { User } = require('../models');
-const { Role } = require('../models');
+const {} = require('../models');
 const { Op } = require('sequelize');
-const {Module,Permission,RoleModulePermission,Department}=require('../models');
+const {Role,User,Department,Ticket,TicketAttachment,Comment,CommentAttachment,TicketHistory} = require('../models');
 const bcryptHelper = require('../utils/bcryptHelper');
 const jwtHelper = require('../utils/jwtHelper');
 const emailHelper = require('../utils/emailHelper');
-
+const { deleteFileFromS3, deleteS3Folder } = require('../utils/fileHelper');
 const createUser = async (req, res) => {
   try {
     const { firstname, lastname, email, password, terms, departmentId,role } = req.body;
@@ -20,9 +19,10 @@ const createUser = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
-    const roleData = await Role.findOne({ where: { name: role } });
+    const roleName = role || 'user';
+    const roleData = await Role.findOne({ where: { name: roleName } });
     if (!roleData) {
-      return res.status(400).json({ message: 'Invalid role' });
+      return res.status(400).json({ message: `Invalid role: ${roleName}` });
     }
     let finalDepartmentId = departmentId;
     if (!departmentId) {
@@ -287,32 +287,51 @@ async function deleteUser(req, res) {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
+    const tickets = await Ticket.findAll({ where: { createdBy: id } });
 
-    const module = await Module.findOne({ where: { name: 'User' } });
-    if (!module) {
-      return res.status(400).json({ message: 'Module not found' });
-    }
-    const permission = await Permission.findOne({ where: { name: 'delete' } });
-    if (!permission) {
-      return res.status(400).json({ message: 'Permission not found' });
-    }
-    const rolePermission = await RoleModulePermission.findOne({
-      where: {
-        roleId: req.user.roleId,
-        moduleId: module.id,
-        permissionId: permission.id,
-        status: true,
-      },
-    });
+    for (const ticket of tickets) {
+      const ticketAttachments = await TicketAttachment.findAll({ where: { ticketId: ticket.id } });
+      for (const attachment of ticketAttachments) {
+        const url = new URL(attachment.url);
+        const key = decodeURIComponent(url.pathname.substring(1));
+        await deleteFileFromS3(key);
+      }
+      await TicketAttachment.destroy({ where: { ticketId: ticket.id } });
+      const comments = await Comment.findAll({ where: { ticketId: ticket.id } });
+      for (const comment of comments) {
+        const commentAttachments = await CommentAttachment.findAll({ where: { commentId: comment.id } });
+        for (const attachment of commentAttachments) {
+          const url = new URL(attachment.url);
+          const key = decodeURIComponent(url.pathname.substring(1));
+          await deleteFileFromS3(key);
+        }
+        await CommentAttachment.destroy({ where: { commentId: comment.id } });
+      }
+      await Comment.destroy({ where: { ticketId: ticket.id } });
 
-    if (!rolePermission) {
-      return res.status(403).json({ message: 'You are not authorized to delete this user.' });
+      await TicketHistory.destroy({ where: { ticketId: ticket.id } });
+
+      await deleteS3Folder(ticket.id);
+      
+      await ticket.destroy();
     }
 
+    const userComments = await Comment.findAll({ where: { updatedBy: id } });
+    for (const comment of userComments) {
+      const commentAttachments = await CommentAttachment.findAll({ where: { commentId: comment.id } });
+      for (const attachment of commentAttachments) {
+        const url = new URL(attachment.url);
+        const key = decodeURIComponent(url.pathname.substring(1));
+        await deleteFileFromS3(key);
+      }
+      await CommentAttachment.destroy({ where: { commentId: comment.id } });
+    }
+    await Comment.destroy({ where: { updatedBy: id } });
     await user.destroy();
-    return res.status(200).json({ message: 'User deleted successfully' });
+    return res.status(200).json({ message: 'User and all related data deleted successfully' });
   } catch (error) {
-    return res.status(500).json({ message: 'Server error' });
+    console.error('Delete user error:', error);
+    return res.status(500).json({ message: 'Server error', error: error.message });
   }
 }
 module.exports = {
