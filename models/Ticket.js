@@ -43,23 +43,29 @@ Ticket.associate = (models) => {
   });
   Ticket.belongsTo(models.User, {
     foreignKey: 'createdBy',
-    as: 'user'
+    as: 'user',
+    onDelete: 'CASCADE'
   });
   Ticket.belongsTo(models.User, {
     foreignKey: 'assignedTo',
-    as: 'assignedUser'
+    as: 'assignedUser',
+    onDelete: 'SET NULL'
+
   });
   Ticket.hasMany(models.Comment, {
     foreignKey: 'ticketId',
     as: 'comments', 
+    onDelete: 'CASCADE'
   });
   Ticket.hasMany(models.TicketAttachment, {
     foreignKey: 'ticketId',
     as: 'attachments',
+    onDelete: 'CASCADE'
   });
   Ticket.hasMany(models.TicketHistory, {
     foreignKey: 'ticketId',
     as: 'history',
+    onDelete: 'CASCADE'
   });
 };
 
