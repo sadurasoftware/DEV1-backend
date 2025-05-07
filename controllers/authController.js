@@ -256,7 +256,7 @@ const getResetPassword = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found.' });
     }
-    return res.redirect(`https://dev-1-frontend.vercel.app/reset-password?token=${token}`);
+    return res.redirect(`${process.env.RESET_PASSWORD_URL}?token=${token}`);
   } catch (error) {
     return res.status(400).json({ message: 'Invalid or expired token' });
   }
