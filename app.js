@@ -30,37 +30,25 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser()); 
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || 'defaultSecret',
+    secret:process.env.SESSION_SECRET || 'defaultSecret', 
     resave: false,
     saveUninitialized: false,
     cookie: {
-      httpOnly: true,
+      httpOnly: true, 
       secure: true,
-      sameSite: 'None',
-      maxAge: 1000 * 60 * 60 * 24,
+      sameSite: 'Strict', 
+      maxAge: 1000 * 60 * 60 * 24, 
     },
   })
 );
 app.use(morgan('tiny'));  
 app.use(helmet());  
-const allowedOrigins = [
-  'https://dev-1-frontend.vercel.app',
-  'http://localhost:3000', 
-];
-
 const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  credentials: true,
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE','PATCH'],
+  credentials: true, 
 };
 app.use(cors(corsOptions));
-
 
 app.use('/api/', apiLimiter);  
 app.use('/api/auth', authRoutes);
