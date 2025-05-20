@@ -618,7 +618,7 @@ const addcommentSchemaParams =Joi.object({
     'string.guid': 'Invalid ticket ID format',
     'any.required': 'ticketId is required',
   }),
-})
+});
 const addcommentSchema = Joi.object({
   commentText: Joi.string().min(1).required().messages({
     'string.empty': 'Comment text cannot be empty',
@@ -636,7 +636,7 @@ const updatecommentSchemaParams =Joi.object({
     "number.integer": "CommentId must be an integer.",
     "any.required": "CommentId is required.",
   }),
-})
+});
 const updatecommentSchema = Joi.object({
   commentText: Joi.string().min(3).optional().required().messages({
     'string.empty': 'Comment text cannot be empty',
@@ -648,7 +648,7 @@ const getTicketCommentParams =Joi.object({
     'string.guid': 'Invalid ticket ID format',
     'any.required': 'ticketId is required',
   }),
-})
+});
 
 const  deleteCommentSchema = Joi.object({
   commentId: Joi.number().integer().required().messages({
@@ -656,14 +656,217 @@ const  deleteCommentSchema = Joi.object({
     "number.integer": "CommentId must be an integer.",
     "any.required": "CommentId is required.",
   }),
-})
+});
 const  getCommentByIdSchema = Joi.object({
   commentId: Joi.number().integer().required().messages({
     "number.base": "CommentId must be a number.",
     "number.integer": "CommentId must be an integer.",
     "any.required": "CommentId is required.",
   }),
+});
+
+//Country
+
+const createCountrySchema = Joi.object({
+  name: Joi.string().trim().min(2).required().messages({
+    'string.empty': 'Country name is required',
+    'string.min': 'Country name must be at least 2 characters long',
+    'any.required': 'Country name is required',
+  })
+});
+const getCountryByIdSchema = Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "CountryId must be a number.",
+    "number.integer": "CountryId must be an integer.",
+    "any.required": "CountryId is required.",
+  }),
+});
+const updateCountrySchemaParams = Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "CountryId must be a number.",
+    "number.integer": "CountryId must be an integer.",
+    "any.required": "CountryId is required.",
+  }),
 })
+const updateCountrySchema = Joi.object({
+  name: Joi.string().trim().min(2).required().messages({
+    'string.empty': 'Country name is required',
+    'string.min': 'Country name must be at least 2 characters long',
+    'any.required': 'Country name is required',
+  })
+});
+const deleteCountrySchema = Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "CountryId must be a number.",
+    "number.integer": "CountryId must be an integer.",
+    "any.required": "CountryId is required.",
+  }),
+});
+const getCountryWithStatesAndBranchesSchema = Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "CountryId must be a number.",
+    "number.integer": "CountryId must be an integer.",
+    "any.required": "CountryId is required.",
+  }), 
+});
+
+//State
+const createStateSchema = Joi.object({
+  name: Joi.string().trim().min(2).required().messages({
+    'string.empty': 'State name is required',
+    'string.min': 'State name must be at least 2 characters long',
+    'any.required': 'State name is required',
+  }),
+  countryId: Joi.number().integer().required().messages({
+    "number.base": "CountryId must be a number.",
+    "number.integer": "CountryId must be an integer.",
+    "any.required": "CountryId is required.",
+  }),
+});
+const getStateByIdSchema = Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "StateId must be a number.",
+    "number.integer": "StateId must be an integer.",
+    "any.required": "StateId is required.",
+  })
+});
+const updateStateParams = Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "StateId must be a number.",
+    "number.integer": "StateId must be an integer.",
+    "any.required": "StateId is required.",
+  }),
+});
+const updateStateSchema = Joi.object({
+  name: Joi.string().trim().min(2).required().messages({
+    'string.empty': 'State name is required',
+    'string.min': 'State name must be at least 2 characters long',
+    'any.required': 'State name is required',
+  }),
+  countryId: Joi.number().integer().required().messages({
+    "number.base": "CountryId must be a number.",
+    "number.integer": "CountryId must be an integer.",
+    "any.required": "CountryId is required.",
+  }),
+});
+const deleteStateSchema = Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "StateId must be a number.",
+    "number.integer": "StateId must be an integer.",
+    "any.required": "StateId is required.",
+  }),
+});
+const getStatesByCountrySchema =Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "CountryId must be a number.",
+    "number.integer": "CountryId must be an integer.",
+    "any.required": "CountryId is required.",
+  }),
+});
+
+//Location 
+
+const createLocationSchema = Joi.object({
+  name: Joi.string().trim().min(2).required().messages({
+    'string.empty': 'Location name is required',
+    'string.min': 'Location name must be at least 2 characters long',
+    'any.required': 'Location name is required',
+  }),
+  stateId: Joi.number().integer().required().messages({
+    "number.base": "StateId must be a number.",
+    "number.integer": "StateId must be an integer.",
+    "any.required": "StateId is required.",
+  }),
+});
+const getLocationByIdSchema = Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "LocationId must be a number.",
+    "number.integer": "LocationId must be an integer.",
+    "any.required": "LocationId is required.",
+  })
+});
+const updateLocationParams = Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "LocationId must be a number.",
+    "number.integer": "LocationId must be an integer.",
+    "any.required": "LocationId is required.",
+  }),
+});
+const updateLocationSchema = Joi.object({
+  name: Joi.string().trim().min(2).required().messages({
+    'string.empty': 'Location name is required',
+    'string.min': 'Location name must be at least 2 characters long',
+    'any.required': 'Location name is required',
+  }),
+  stateId: Joi.number().integer().required().messages({
+    "number.base": "StateId must be a number.",
+    "number.integer": "StateId must be an integer.",
+    "any.required": "StateId is required.",
+  }),
+});
+const deleteLocationSchema = Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "LocationId must be a number.",
+    "number.integer": "LocationId must be an integer.",
+    "any.required": "LocationId is required.",
+  }),
+});
+const getLocationsByStateSchema =Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "StateId must be a number.",
+    "number.integer": "StateId must be an integer.",
+    "any.required": "StateId is required.",
+  }),
+  });
+
+  //Branch
+
+const createBranchSchema = Joi.object({
+  name: Joi.string().trim().min(2).required().messages({
+    'string.empty': 'Branch name is required',
+    'string.min': 'Branch name must be at least 2 characters long',
+    'any.required': 'Branch name is required',
+  }),
+  locationId: Joi.number().integer().required().messages({
+    "number.base": "LocationId must be a number.",
+    "number.integer": "LocationId must be an integer.",
+    "any.required": "LocationId is required.",
+  }),
+});
+const getBranchByIdSchema = Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "BranchId must be a number.",
+    "number.integer": "BranchId must be an integer.",
+    "any.required": "BranchId is required.",
+  })
+});
+const updateBranchParams = Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "BranchId must be a number.",
+    "number.integer": "BranchId must be an integer.",
+    "any.required": "BranchId is required.",
+  }),
+});
+const updateBranchSchema = Joi.object({
+  name: Joi.string().trim().min(2).required().messages({
+    'string.empty': 'Branch name is required',
+    'string.min': 'Branch name must be at least 2 characters long',
+    'any.required': 'Branch name is required',
+  }),
+  locationId: Joi.number().integer().required().messages({
+    "number.base": "LocationId must be a number.",
+    "number.integer": "LocationId must be an integer.",
+    "any.required": "LocationId is required.",
+  }),
+});
+const deleteBranchSchema = Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "BranchId must be a number.",
+    "number.integer": "BranchId must be an integer.",
+    "any.required": "BranchId is required.",
+  }),
+});
+
 const validate = (schema) => (req, res, next) => {
   const { error } = schema.validate(req.body, { abortEarly: false });
   if (error) {
@@ -754,4 +957,34 @@ module.exports = {
   getTicketCommentValidator : validateParams(getTicketCommentParams),
   deleteCommentValidator : validateParams(deleteCommentSchema),
   getCommentByIdValidator : validateParams(getCommentByIdSchema),
+
+  createCountrySchemaValidator : validate(createCountrySchema),
+  getCountryByIdSchemaValidator : validateParams(getCountryByIdSchema),
+  updateCountrySchemaParamsValidator : validateParams(updateCountrySchemaParams),
+  updateCountrySchemaValidator : validate(updateCountrySchema),
+  deleteCountrySchemaValidator : validateParams(deleteCountrySchema),
+  getCountryWithStatesAndBranchesSchemaValidator : validateParams(getCountryWithStatesAndBranchesSchema),
+
+  createStateSchemaValidator : validate(createStateSchema),
+  getStateByIdSchemaValidator : validateParams(getStateByIdSchema),
+  updateStateSchemaParamsValidator : validateParams(updateStateParams),
+  updateStateSchemaValidator : validate(updateStateSchema),
+  deleteStateSchemaValidator : validateParams(deleteStateSchema),
+  getStatesByCountrySchemaValidator : validateQuery(getStatesByCountrySchema),
+
+  createLocationSchemaValidator : validate(createLocationSchema),
+  getLocationByIdSchemaValidator : validateParams(getLocationByIdSchema),
+  updateLocationSchemaParamsValidator : validateParams(updateLocationParams),
+  updateLocationSchemaValidator : validate(updateLocationSchema),
+  deleteLocationSchemaValidator : validateParams(deleteLocationSchema),
+  getLocationsByStateSchemaValidator : validateQuery(getLocationsByStateSchema),
+
+  createBranchSchemaValidator : validate(createBranchSchema),
+  getBranchByIdSchemaValidator : validateParams(getBranchByIdSchema),
+  updateBranchSchemaParamsValidator : validateParams(updateBranchParams),
+  updateBranchSchemaValidator : validate(updateBranchSchema),
+  deleteBranchSchemaValidator : validateParams(deleteBranchSchema),
+  
+
+  
 };
