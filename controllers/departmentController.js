@@ -5,7 +5,10 @@ const createDepartment = async (req, res) => {
     if (!name) {
       return res.status(400).json({ message: "Department name is required." });
     }
-    const department = await Department.create({ name });
+   const existingDepartment = await Department.create({ name });
+    if(existingDepartment){
+      return res.status(400).json({message:'Department already exists'});
+    }
     return res.status(201).json({ message: "Department created successfully", department });
   } catch (error) {
     console.error(error);

@@ -12,7 +12,14 @@ const Comment = require('./Comment')
 const TicketAttachment = require('./TicketAttachment');
 const TicketHistory = require('./TicketHistory');
 const CommentAttachment = require('./CommentAttachment');
-const models = { User, Role, Permission, Module, RoleModulePermission, Department,Category, Ticket,Comment ,TicketAttachment,CommentAttachment,TicketHistory};
+const Country = require('./Country');
+const State = require('./State');
+const Location = require('./Location');
+const Branch = require('./Branch');
+const models = {
+   User, Role, Permission, Module, RoleModulePermission, Department,Category, Ticket,Comment ,TicketAttachment,CommentAttachment,TicketHistory,
+   Country,State,Location,Branch
+  };
 Object.keys(models).forEach((modelName) => {
   if (models[modelName].associate) {
     models[modelName].associate(models);
