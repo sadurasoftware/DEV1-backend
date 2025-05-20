@@ -18,6 +18,10 @@ const ticketRoutes=require('./routes/ticketRoutes')
 const categoryRoutes=require('./routes/categoryRoutes')
 const serverless = require("serverless-http");
 const commentRoutes=require('./routes/commentRoutes')
+const countryRoutes = require('./routes/countryRoutes')
+const stateRoutes = require('./routes/stateRoutes')
+const locationRoutes = require('./routes/locationRoutes')
+const branchRoutes = require('./routes/branchRoutes')
 dotenv.config();
 
 const app = express();
@@ -26,27 +30,37 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser()); 
 app.use(
   session({
-    secret:process.env.SESSION_SECRET || 'defaultSecret', 
+    secret: process.env.SESSION_SECRET || 'defaultSecret',
     resave: false,
     saveUninitialized: false,
     cookie: {
-      httpOnly: true, 
+      httpOnly: true,
       secure: true,
-      sameSite: 'Strict', 
-      maxAge: 1000 * 60 * 60 * 24, 
+      sameSite: 'None',
+      maxAge: 1000 * 60 * 60 * 24,
     },
   })
 );
-
 app.use(morgan('tiny'));  
 app.use(helmet());  
-const corsOptions = {
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE','PATCH'],
-  credentials: true, 
-};
+const allowedOrigins = [
+  'https://dev-1-frontend.vercel.app',
+  'http://localhost:3000', 
+];
 
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  credentials: true,
+};
 app.use(cors(corsOptions));
+
 
 app.use('/api/', apiLimiter);  
 app.use('/api/auth', authRoutes);
@@ -61,6 +75,11 @@ app.use('/api/department',department)
 app.use('/api/tickets',ticketRoutes)
 app.use('/api/category',categoryRoutes)
 app.use('/api/comments',commentRoutes)
+app.use('/api/country',countryRoutes)
+app.use('/api/state',stateRoutes)
+app.use('/api/location',locationRoutes)
+app.use('/api/branch',branchRoutes)
+
 app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ message: 'Internal Server Error' });
 });

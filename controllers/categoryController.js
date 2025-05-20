@@ -6,6 +6,9 @@ const createCategory = async (req, res) => {
       return res.status(400).json({ message: 'Category name is required' });
     }
     const category = await Category.create({ name });
+    if(category){
+      return res.status(400).json({message:'Category already exists'});
+    }
     return res.status(201).json({ message: 'Category created successfully', category });
   } catch (error) {
     console.error('Error creating category:', error);
