@@ -1,16 +1,13 @@
-const { Branch, Location } = require('../models');
+const { Branch, Location,State,Country } = require('../models');
 const { Op, fn } = require('sequelize');
 
 const createBranch = async (req, res) => {
   try {
     const { name, pincode, locationId } = req.body;
-
     if (!name || !pincode || !locationId) {
       return res.status(400).json({ message: 'Branch name, pincode, and locationId are required' });
     }
-
     const trimmedName = name.trim();
-
     const exists = await Branch.findOne({
       where: {
         name: fn('LOWER', trimmedName),
@@ -22,7 +19,6 @@ const createBranch = async (req, res) => {
     if (exists) {
       return res.status(409).json({ message: 'Branch already exists with same name and pincode in this location' });
     }
-
     const branch = await Branch.create({
       name: trimmedName,
       pincode,
@@ -35,7 +31,6 @@ const createBranch = async (req, res) => {
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
-
 const getAllBranches = async (req, res) => {
   try {
     const { locationId } = req.query;
@@ -43,7 +38,27 @@ const getAllBranches = async (req, res) => {
 
     const branches = await Branch.findAll({
       ...condition,
-      include: [{ model: Location, as: 'location', attributes: ['id', 'name'] }],
+      include: [
+        {
+          model: Location,
+          as: 'location',
+          attributes: ['id', 'name'],
+          include: [
+            {
+              model: State,
+              as: 'state',
+              attributes: ['id', 'name'],
+              include: [
+                {
+                  model: Country,
+                  as: 'country',
+                  attributes: ['id', 'name']
+                }
+              ]
+            }
+          ]
+        }
+      ],
       order: [['name', 'ASC']],
     });
 

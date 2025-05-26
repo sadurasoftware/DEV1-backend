@@ -30,7 +30,18 @@ const getAllStates = async (req, res) => {
     const condition = countryId ? { where: { countryId } } : {};
     const states = await State.findAll({
       ...condition,
-      include: [{ model: Country, as: 'country', attributes: ['id', 'name'] }],
+      include: [
+        {
+          model: Country,
+          as: 'country',
+          attributes: ['id', 'name'],
+        },
+        {
+          model: Location,
+          as: 'locations',
+          attributes: ['id', 'name'],
+        },
+      ],
       order: [['name', 'ASC']],
     });
     return res.status(200).json({ states });
@@ -39,6 +50,7 @@ const getAllStates = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
 
 const getStateById =async (req, res) => {
   try {
