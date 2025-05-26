@@ -1,4 +1,4 @@
-const { Location, State,Branch } = require('../models');
+const { Location, State,Branch ,Country} = require('../models');
 const { Op, fn } = require('sequelize');
 
 const createLocation = async (req, res) => {
@@ -29,11 +29,26 @@ const getAllLocations = async (req, res) => {
   try {
     const { stateId } = req.query;
     const condition = stateId ? { where: { stateId } } : {};
+
     const locations = await Location.findAll({
       ...condition,
-      include: [{ model: State, as: 'state', attributes: ['id', 'name'] }],
+      include: [
+        {
+          model: State,
+          as: 'state',
+          attributes: ['id', 'name'],
+          include: [
+            {
+              model: Country,
+              as: 'country',
+              attributes: ['id', 'name'],
+            },
+          ],
+        },
+      ],
       order: [['name', 'ASC']],
     });
+
     return res.status(200).json({ locations });
   } catch (error) {
     console.error('Get locations error:', error);
