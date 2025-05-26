@@ -757,7 +757,7 @@ const deleteStateSchema = Joi.object({
   }),
 });
 const getStatesByCountrySchema =Joi.object({
-  id: Joi.number().integer().required().messages({
+  countryId: Joi.number().integer().required().messages({
     "number.base": "CountryId must be a number.",
     "number.integer": "CountryId must be an integer.",
     "any.required": "CountryId is required.",
@@ -812,7 +812,7 @@ const deleteLocationSchema = Joi.object({
   }),
 });
 const getLocationsByStateSchema =Joi.object({
-  id: Joi.number().integer().required().messages({
+  stateId: Joi.number().integer().required().messages({
     "number.base": "StateId must be a number.",
     "number.integer": "StateId must be an integer.",
     "any.required": "StateId is required.",
