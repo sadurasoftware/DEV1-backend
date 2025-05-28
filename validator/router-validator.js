@@ -710,6 +710,38 @@ const getCountryWithStatesAndBranchesSchema = Joi.object({
   }), 
 });
 
+const updateMasterDataSchema = Joi.object({
+  countryId: Joi.number().integer().required().messages({
+    'any.required': 'countryId is required',
+    'number.base': 'countryId must be a number',
+  }),
+  countryName: Joi.string().trim().optional(),
+
+  stateId: Joi.number().integer().required().messages({
+    'any.required': 'stateId is required',
+    'number.base': 'stateId must be a number',
+  }),
+  stateName: Joi.string().trim().optional(),
+
+  locationId: Joi.number().integer().required().messages({
+    'any.required': 'locationId is required',
+    'number.base': 'locationId must be a number',
+  }),
+  locationName: Joi.string().trim().optional(),
+
+  branchId: Joi.number().integer().required().messages({
+    'any.required': 'branchId is required',
+    'number.base': 'branchId must be a number',
+  }),
+  branchName: Joi.string().trim().optional(),
+
+  pincode: Joi.number().integer().optional().messages({
+    'number.base': 'pincode must be a number',
+  }),
+});
+
+
+
 //State
 const createStateSchema = Joi.object({
   name: Joi.string().trim().min(2).required().messages({
@@ -964,7 +996,8 @@ module.exports = {
   updateCountrySchemaValidator : validate(updateCountrySchema),
   deleteCountrySchemaValidator : validateParams(deleteCountrySchema),
   getCountryWithStatesAndBranchesSchemaValidator : validateParams(getCountryWithStatesAndBranchesSchema),
-
+  updateMasterDataSchemaValidator : validate(updateMasterDataSchema),
+  
   createStateSchemaValidator : validate(createStateSchema),
   getStateByIdSchemaValidator : validateParams(getStateByIdSchema),
   updateStateSchemaParamsValidator : validateParams(updateStateParams),

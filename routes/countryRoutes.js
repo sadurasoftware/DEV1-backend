@@ -10,4 +10,5 @@ router.put('/update/:id', validator.updateCountrySchemaParamsValidator,validator
 router.delete('/delete/:id',validator.deleteCountrySchemaValidator,countryController.deleteCountry);
 router.get('/full', countryController.getAllCountriesWithHierarchy);
 router.get('/getCountryWith-sates-branches/:id',validator.getCountryWithStatesAndBranchesSchemaValidator,countryController.getCountryWithStatesAndBranches);
+router.put('/update-all',validator.updateMasterDataSchemaValidator,countryController.updateAllMasterData)
 module.exports = router;
