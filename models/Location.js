@@ -11,6 +11,10 @@ const Location = sequelize.define('Location', {
             type: DataTypes.STRING,
             allowNull: false,
         },
+        countryId: { 
+            type: DataTypes.INTEGER,
+            allowNull: false,
+          },
         stateId: {
             type: DataTypes.INTEGER,
             allowNull: false,
@@ -18,6 +22,10 @@ const Location = sequelize.define('Location', {
     });
 
     Location.associate = models => {
+        Location.belongsTo(models.Country, {
+            foreignKey: 'countryId',
+            as: 'country',
+          });
         Location.belongsTo(models.State, {
             foreignKey: 'stateId',
             as: 'state',

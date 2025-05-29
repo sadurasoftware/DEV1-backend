@@ -15,6 +15,14 @@ const Branch = sequelize.define('Branch', {
             type: DataTypes.INTEGER,
             allowNull: false,
         },
+        countryId: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+          },
+          stateId: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+          },
         locationId: {
             type: DataTypes.INTEGER,
             allowNull: false,
@@ -22,10 +30,19 @@ const Branch = sequelize.define('Branch', {
     });
 
     Branch.associate = models => {
+        Branch.belongsTo(models.Country, {
+            foreignKey: 'countryId',
+            as: 'country',
+          });
+        Branch.belongsTo(models.State, {
+            foreignKey: 'stateId',
+            as: 'state',
+          });
         Branch.belongsTo(models.Location, {
             foreignKey: 'locationId',
             as: 'location',
         });
+
     };
     
     module.exports = Branch;

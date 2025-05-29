@@ -804,6 +804,11 @@ const createLocationSchema = Joi.object({
     'string.min': 'Location name must be at least 2 characters long',
     'any.required': 'Location name is required',
   }),
+  countryId: Joi.number().integer().required().messages({
+    "number.base": "CountryId must be a number.",
+    "number.integer": "CountryId must be an integer.",
+    "any.required": "CountryId is required.",
+  }),
   stateId: Joi.number().integer().required().messages({
     "number.base": "StateId must be a number.",
     "number.integer": "StateId must be an integer.",
@@ -830,6 +835,11 @@ const updateLocationSchema = Joi.object({
     'string.min': 'Location name must be at least 2 characters long',
     'any.required': 'Location name is required',
   }),
+  countryId: Joi.number().integer().required().messages({
+    "number.base": "CountryId must be a number.",
+    "number.integer": "CountryId must be an integer.",
+    "any.required": "CountryId is required.",
+  }),
   stateId: Joi.number().integer().required().messages({
     "number.base": "StateId must be a number.",
     "number.integer": "StateId must be an integer.",
@@ -850,7 +860,18 @@ const getLocationsByStateSchema =Joi.object({
     "any.required": "StateId is required.",
   }),
   });
-
+ const getLocationsByCountryAndStateSchema =Joi.object({
+  countryId: Joi.number().integer().required().messages({
+    "number.base": "CountryId must be a number.",
+    "number.integer": "CountryId must be an integer.",
+    "any.required": "CountryId is required.",
+  }),
+  stateId: Joi.number().integer().required().messages({
+    "number.base": "StateId must be a number.",
+    "number.integer": "StateId must be an integer.",
+    "any.required": "StateId is required.",
+  }),
+ })
   //Branch
 
 const createBranchSchema = Joi.object({
@@ -858,6 +879,21 @@ const createBranchSchema = Joi.object({
     'string.empty': 'Branch name is required',
     'string.min': 'Branch name must be at least 2 characters long',
     'any.required': 'Branch name is required',
+  }),
+  pincode: Joi.number().integer().required().messages({
+    "number.base": "Pincode must be a number.",
+    "number.integer": "Pincode must be an integer.",
+    "any.required": "Pincode is required.",
+  }),
+  countryId: Joi.number().integer().required().messages({
+    "number.base": "CountryId must be a number.",
+    "number.integer": "CountryId must be an integer.",
+    "any.required": "CountryId is required.",
+  }),
+  stateId: Joi.number().integer().required().messages({
+    "number.base": "StateId must be a number.",
+    "number.integer": "StateId must be an integer.",
+    "any.required": "StateId is required.",
   }),
   locationId: Joi.number().integer().required().messages({
     "number.base": "LocationId must be a number.",
@@ -884,6 +920,21 @@ const updateBranchSchema = Joi.object({
     'string.empty': 'Branch name is required',
     'string.min': 'Branch name must be at least 2 characters long',
     'any.required': 'Branch name is required',
+  }),
+  pincode: Joi.number().integer().required().messages({
+    "number.base": "Pincode must be a number.",
+    "number.integer": "Pincode must be an integer.",
+    "any.required": "Pincode is required.",
+  }),
+  countryId: Joi.number().integer().required().messages({
+    "number.base": "CountryId must be a number.",
+    "number.integer": "CountryId must be an integer.",
+    "any.required": "CountryId is required.",
+  }),
+  stateId: Joi.number().integer().required().messages({
+    "number.base": "StateId must be a number.",
+    "number.integer": "StateId must be an integer.",
+    "any.required": "StateId is required.",
   }),
   locationId: Joi.number().integer().required().messages({
     "number.base": "LocationId must be a number.",
@@ -1011,6 +1062,7 @@ module.exports = {
   updateLocationSchemaValidator : validate(updateLocationSchema),
   deleteLocationSchemaValidator : validateParams(deleteLocationSchema),
   getLocationsByStateSchemaValidator : validateQuery(getLocationsByStateSchema),
+  getLocationsByCountryAndStateSchemaValidator : validateQuery(getLocationsByCountryAndStateSchema),
 
   createBranchSchemaValidator : validate(createBranchSchema),
   getBranchByIdSchemaValidator : validateParams(getBranchByIdSchema),
