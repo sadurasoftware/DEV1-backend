@@ -9,4 +9,5 @@ router.get('/get/:id', validator.getLocationByIdSchemaValidator,locationControll
 router.put('/update/:id', validator.updateLocationSchemaParamsValidator,validator.updateLocationSchemaValidator,locationController.updateLocation);
 router.delete('/delete/:id',validator.deleteLocationSchemaValidator,locationController.deleteLocation);
 router.get('/by-state',validator.getLocationsByStateSchemaValidator, locationController.getLocationsByState);
+router.get('/by-country-state',validator.getLocationsByCountryAndStateSchemaValidator, locationController.getLocationsByCountryAndState);
 module.exports = router;
