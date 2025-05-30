@@ -22,6 +22,7 @@ const countryRoutes = require('./routes/countryRoutes')
 const stateRoutes = require('./routes/stateRoutes')
 const locationRoutes = require('./routes/locationRoutes')
 const branchRoutes = require('./routes/branchRoutes')
+const DesignationRoutes = require('./routes/designationRoutes')
 dotenv.config();
 
 const app = express();
@@ -67,6 +68,7 @@ app.use('/api/country',countryRoutes)
 app.use('/api/state',stateRoutes)
 app.use('/api/location',locationRoutes)
 app.use('/api/branch',branchRoutes)
+app.use('/api/designation',DesignationRoutes)
 
 app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ message: 'Internal Server Error' });
