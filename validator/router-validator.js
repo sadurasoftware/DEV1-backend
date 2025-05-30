@@ -737,6 +737,19 @@ const updateMasterDataSchema = Joi.object({
 
   pincode: Joi.number().integer().optional().messages({
     'number.base': 'pincode must be a number',
+    'number.integer': 'pincode must be an integer',
+  }),
+  countryRefId: Joi.number().integer().optional().messages({
+    'number.base': 'countryRefId must be a number',
+    'number.integer': 'countryRefId must be an integer',
+  }),
+  stateRefId: Joi.number().integer().optional().messages({
+    'number.base': 'stateRefId must be a number',
+    'number.integer': 'stateRefId must be an integer',
+  }),
+  locationRefId: Joi.number().integer().optional().messages({
+    'number.base': 'locationRefId must be a number',
+    'number.integer': 'locationRefId must be an integer',
   }),
 });
 

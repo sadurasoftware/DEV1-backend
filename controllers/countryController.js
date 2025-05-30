@@ -166,94 +166,94 @@ const updateAllMasterData = async (req, res) => {
       branchId,
       branchName,
       pincode,
+      countryRefId,
+      stateRefId,
+      locationRefId,
     } = req.body;
 
-    const country = await Country.findByPk(countryId);
-    if (!country) return res.status(404).json({ message: 'Country not found' });
+    const result = {};
 
-    if (countryName) {
-      const existingCountry = await Country.findOne({
-        where: {
-          id: { [Op.ne]: countryId },
-          name: fn('LOWER', countryName.trim()),
-        },
+    if (countryId && countryName) {
+      const country = await Country.findByPk(countryId);
+      if (!country) return res.status(404).json({ message: 'Country not found' });
+
+      const duplicate = await Country.findOne({
+        where: { id: { [Op.ne]: countryId }, name: fn('LOWER', countryName.trim()) },
       });
-      if (existingCountry) {
-        return res.status(409).json({ message: 'Country name already exists' });
-      }
+      if (duplicate) return res.status(409).json({ message: 'Country name already exists' });
+
       country.name = countryName.trim();
       await country.save();
+      result.country = country;
     }
 
-    const state = await State.findByPk(stateId);
-    if (!state) return res.status(404).json({ message: 'State not found' });
+    if (stateId && stateName && countryRefId) {
+      const state = await State.findByPk(stateId);
+      if (!state) return res.status(404).json({ message: 'State not found' });
 
-    if (stateName) {
-      const existingState = await State.findOne({
+      const duplicate = await State.findOne({
         where: {
           id: { [Op.ne]: stateId },
           name: fn('LOWER', stateName.trim()),
-          countryId,
+          countryId: countryRefId,
         },
       });
-      if (existingState) {
-        return res.status(409).json({ message: 'State name already exists in the same country' });
-      }
+      if (duplicate) return res.status(409).json({ message: 'State name already exists in this country' });
+
       state.name = stateName.trim();
+      state.countryId = countryRefId;
       await state.save();
+      result.state = state;
     }
 
-    const location = await Location.findByPk(locationId);
-    if (!location) return res.status(404).json({ message: 'Location not found' });
+    if (locationId && locationName  && countryRefId && stateRefId) {
+      const location = await Location.findByPk(locationId);
+      if (!location) return res.status(404).json({ message: 'Location not found' });
 
-    if (locationName) {
-      const existingLocation = await Location.findOne({
+      const duplicate = await Location.findOne({
         where: {
           id: { [Op.ne]: locationId },
           name: fn('LOWER', locationName.trim()),
-          stateId,
+          stateId: stateRefId,
         },
       });
-      if (existingLocation) {
-        return res.status(409).json({ message: 'Location name already exists in the same state' });
-      }
+      if (duplicate) return res.status(409).json({ message: 'Location already exists in this state' });
+
       location.name = locationName.trim();
+      location.countryId = countryRefId;
+      location.stateId = stateRefId;
       await location.save();
+      result.location = location;
     }
 
-    const branch = await Branch.findByPk(branchId);
-    if (!branch) return res.status(404).json({ message: 'Branch not found' });
+    if (branchId && branchName && pincode && countryRefId && stateRefId && locationRefId ) {
+      const branch = await Branch.findByPk(branchId);
+      if (!branch) return res.status(404).json({ message: 'Branch not found' });
 
-    if (branchName) {
-      const existingBranch = await Branch.findOne({
+      const duplicate = await Branch.findOne({
         where: {
           id: { [Op.ne]: branchId },
           name: fn('LOWER', branchName.trim()),
-          locationId,
+          pincode,
+          countryId: countryRefId,
+          stateId: stateRefId,
+          locationId: locationRefId,
         },
       });
-      if (existingBranch) {
-        return res.status(409).json({ message: 'Branch name already exists in the same location' });
-      }
+      if (duplicate) return res.status(409).json({ message: 'Branch already exists in this location/state/country' });
+
       branch.name = branchName.trim();
-    }
-
-    if (pincode) {
       branch.pincode = pincode;
+      branch.countryId = countryRefId;
+      branch.stateId = stateRefId;
+      branch.locationId = locationRefId;
+      await branch.save();
+      result.branch = branch;
     }
-
-    await branch.save();
-
-    return res.status(200).json({
-      message: 'Master data updated successfully',
-      updated: {
-        countryId,
-        stateId,
-        locationId,
-        branchId,
-      },
-    });
-
+    if (Object.keys(result).length === 0) {
+      return res.status(400).json({ message: 'No valid data provided for update' });
+    }
+    return res.status(200).json({ message: 'Update successful', data: result });
   } catch (error) {
     console.error('Update master data error:', error);
     return res.status(500).json({ message: 'Server error', error: error.message });
