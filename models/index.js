@@ -16,9 +16,10 @@ const Country = require('./Country');
 const State = require('./State');
 const Location = require('./Location');
 const Branch = require('./Branch');
+const Designation = require('./Designation');
 const models = {
    User, Role, Permission, Module, RoleModulePermission, Department,Category, Ticket,Comment ,TicketAttachment,CommentAttachment,TicketHistory,
-   Country,State,Location,Branch
+   Country,State,Location,Branch,Designation
   };
 Object.keys(models).forEach((modelName) => {
   if (models[modelName].associate) {
