@@ -43,6 +43,7 @@ const forgotPasswordEmail = async(to, url, username)=>{
     console.log(url)
 }
 
+
 const ticketAssignedEmail = async (to, firstname, ticketId, title, description,ticketUrl) => {
     try {
         await transporter.sendMail({
@@ -67,10 +68,33 @@ const ticketAssignedEmail = async (to, firstname, ticketId, title, description,t
         console.error(`Error sending ticket assignment email: ${error.message}`);
     }
 };
+const sendSetPasswordEmail = async (to, url, username) => {
+    try {
+        await transporter.sendMail({
+            from: process.env.APP_EMAIL,
+            to,
+            subject: 'Set Your Password',
+            html: `<div style="width: 950px; height: 230px; background-color: white; border: 1px solid black; padding: 20px;">
+                <h2 style="text-align: center; margin-bottom: 20px;">SET PASSWORD</h2>
+                <p style="font-size: 16px; color: #333;">Hi ${username},</p>
+                <p style="font-size: 16px; color: #333;">You’ve been added to the system. Please click the button below to set your login password:</p>
+                <p style="text-align: left; margin-bottom: 0;">
+                    <a href="${url}" style="display: inline-block; padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px;">Set Password</a>
+                </p>
+                <p style="font-size: 16px; color: #333; margin-top: 20px;">If you did not request this, you can ignore this email.</p>
+            </div>`
+        });
+        console.log(`Set password email sent to ${to}`);
+    } catch (error) {
+        console.error(`Error sending set password email: ${error.message}`);
+    }
+};
+
 
 
 module.exports = { 
     verificationEmail,
     forgotPasswordEmail,
-    ticketAssignedEmail
+    ticketAssignedEmail,
+    sendSetPasswordEmail
 }
