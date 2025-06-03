@@ -5,7 +5,7 @@ const {checkPermission,checkRole}=require('../middlewares/checkRole');
 const validator=require('../validator/router-validator')
 const router=express.Router();
 
-router.post('/create',authenticateToken,checkPermission("User","create"),validator.createUservalidator,userController.createUser)
+router.post('/create',authenticateToken,checkPermission("User","create"),userController.createUser)
 router.get('/users', userController.getUsers)
 router.get('/admins',authenticateToken,checkRole('superadmin','admin'), userController.getAdmins)
 router.get('/', authenticateToken,checkRole('superadmin','admin'),userController.getUsers)

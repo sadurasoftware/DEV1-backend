@@ -14,4 +14,5 @@ router.post('/forget-password',validator.forgetPasswordValidator,authController.
 router.get('/reset-password',authController.getResetPassword)
 router.post('/reset-password',validator.resetPasswordValidator,authController.resetPassword)
 router.post('/change-password',authenticateToken,validator.changePasswordValidator,authController.changePassword)
+router.post('/set-password/:token',authController.setPassword)
 module.exports = router;

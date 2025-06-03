@@ -12,14 +12,7 @@ const Designation = sequelize.define('Designation', {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  departmentId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-  },
 });
 
-Designation.associate = (models) => {
-  Designation.belongsTo(models.Department, { foreignKey: 'departmentId', as: 'department' });
-};
 
 module.exports = Designation;

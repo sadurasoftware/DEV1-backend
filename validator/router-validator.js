@@ -1,4 +1,5 @@
 const Joi = require('joi');
+const { getDesignationById } = require('../controllers/designationController');
 
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 //register
@@ -962,6 +963,43 @@ const deleteBranchSchema = Joi.object({
     "any.required": "BranchId is required.",
   }),
 });
+//Designation
+const createDesignationSchema = Joi.object({
+  name: Joi.string().trim().min(2).required().messages({
+    'string.empty': 'Designation name is required',
+    'string.min': 'Designation name must be at least 2 characters long',
+    'any.required': 'Designation name is required',
+  }),
+})
+
+const updateDesignationParams = Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "DesignationId must be a number.",
+    "number.integer": "DesignationId must be an integer.",
+    "any.required": "DesignationId is required.",
+  }),
+})
+const updateDesignationSchema= Joi.object({
+  name: Joi.string().trim().min(2).required().messages({
+    'string.empty': 'Designation name is required',
+    'string.min': 'Designation name must be at least 2 characters long',
+    'any.required': 'Designation name is required',
+  }),
+})
+const getDesignationByIdParams = Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "DepartmentId must be a number.",
+    "number.integer": "DepartmentId must be an integer.",
+    "any.required": "DepartmentId is required.",
+  }),
+})
+const deleteDesignationSchema = Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "DesignationId must be a number.",
+    "number.integer": "DesignationId must be an integer.",
+    "any.required": "DesignationId is required.",
+  }),
+})
 
 const validate = (schema) => (req, res, next) => {
   const { error } = schema.validate(req.body, { abortEarly: false });
@@ -1083,6 +1121,10 @@ module.exports = {
   updateBranchSchemaValidator : validate(updateBranchSchema),
   deleteBranchSchemaValidator : validateParams(deleteBranchSchema),
   
-
+  createDesignationSchemaValidator : validate(createDesignationSchema),
+  updateDesignationSchemaParamsValidator : validateParams(updateDesignationParams),
+  updateDesignationSchemaValidator : validate(updateDesignationSchema),
+  getDesignationByIdparamsValidator : validateParams(getDesignationByIdParams),
+  deleteDesignationSchemaValidator : validateParams(deleteDesignationSchema),
   
 };

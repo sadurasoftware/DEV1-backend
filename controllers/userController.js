@@ -5,53 +5,97 @@ const bcryptHelper = require('../utils/bcryptHelper');
 const jwtHelper = require('../utils/jwtHelper');
 const emailHelper = require('../utils/emailHelper');
 const { deleteFileFromS3, deleteS3Folder } = require('../utils/fileHelper');
+const { Designation,Country,State,Location,Branch } = require('../models');
+const CreateUser=require('../models/CreateUser');
+
+
 const createUser = async (req, res) => {
   try {
-    const { firstname, lastname, email, password, terms, departmentId,role } = req.body;
-    // if (password !== confirmPassword) {
-    //   logger.warn(`Passwords do not match during registration: ${email}`);
-    //   return res.status(400).json({ message: 'Passwords do not match' });
-    // }
-    if (!terms) {
-      return res.status(400).json({ message: 'You must accept the terms and conditions to register' });
+    const createdBy = req.user.id;
+    const {
+      firstName,
+      lastName,
+      email,
+      phone,
+      address,
+      profilePicture,
+      gender,
+      blood_group,
+      countryName,
+      stateName,
+      locationName,
+      branchName,
+      departmentName,
+      designationName,
+      roleName = 'user',
+      terms
+    } = req.body;
+    
+    if (!firstName || !lastName || !email || !phone) {
+      return res.status(400).json({ message: 'Required fields are missing' });
     }
-    const existingUser = await User.findOne({ where: { email } });
+    const phoneRegex = /^[6-9]\d{9}$/;
+    if (!phoneRegex.test(phone)) {
+      return res.status(400).json({ message: 'Invalid phone number format' });
+    }
+
+    const existingUser = await CreateUser.findOne({ where: { email } });
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
-    const roleName = role || 'user';
-    const roleData = await Role.findOne({ where: { name: roleName } });
-    if (!roleData) {
-      return res.status(400).json({ message: `Invalid role: ${roleName}` });
-    }
-    let finalDepartmentId = departmentId;
-    if (!departmentId) {
-      const generalDepartment = await Department.findOne({ where: { name: 'General department' } });
-      if (!generalDepartment) {
-        return res.status(400).json({ message: 'Default department "General" not found' });
-      }
-      finalDepartmentId = generalDepartment.id;
-    }
-    const hashedPassword = await bcryptHelper.hashPassword(password);
-    const newUser = await User.create({
-      firstname,
-      lastname,
+    const role = await Role.findOne({ where: { name: roleName } });
+    const country = await Country.findOne({ where: { name: countryName } });
+    const state = await State.findOne({ where: { name: stateName } });
+    const location= await Location.findOne({ where: { name: locationName } });
+    const branch = await Branch.findOne({ where: { name: branchName } });
+    const department = await Department.findOne({ where: { name: departmentName } });
+    const designation = await Designation.findOne({ where: { name: designationName } });
+
+    if (!role) return res.status(400).json({ message: 'Invalid role name' });
+    if (!country) return res.status(400).json({ message: 'Invalid country name' });
+    if (!state) return res.status(400).json({ message: 'Invalid state name' });
+    if (!location) return res.status(400).json({ message: 'Invalid location name' });
+    if (!branch) return res.status(400).json({ message: 'Invalid branch name' });
+    if (!department) return res.status(400).json({ message: 'Invalid department name' });
+    if (!designation) return res.status(400).json({ message: 'Invalid designation name' });
+    
+    const hashedDummyPassword = await bcryptHelper.hashPassword('admin123');
+    const newUser = await CreateUser.create({
+      firstName,
+      lastName,
       email,
-      password: hashedPassword,
+      password: hashedDummyPassword,
+      phone,
+      address,
+      profilePicture,
+      gender,
+      blood_group,
+      country_id: country.id,
+      state_id: state.id,
+      location_id: location.id,
+      branch_id: branch.id,
+      roleId: role.id,
+      departmentId: department.id,
+      designationId: designation.id,
       isVerified: false,
-      roleId: roleData.id,
-      departmentId: finalDepartmentId,
       terms,
+      createdBy,
+      updatedBy: createdBy,
     });
-    const tokenPayload = { id: newUser.id, email: newUser.email, firstname: newUser.firstname, lastname: newUser.lastname };
-    const token = jwtHelper.generateToken(tokenPayload, process.env.JWT_SECRET, '10m');
-    const verificationUrl = `${process.env.VERIFICATION_URL}/verify-email/${token}`;
-    await emailHelper.verificationEmail(email, verificationUrl, firstname);
+
+    const tokenPayload = { id: newUser.id, email: newUser.email };
+    const token = jwtHelper.generateToken(tokenPayload, process.env.JWT_SECRET, '1d');
+
+    const verifyUrl = `${process.env.VERIFICATION_URL}/set-password/${token}`;
+    await emailHelper.sendSetPasswordEmail(newUser.email, newUser.firstName, verifyUrl);
+
     return res.status(201).json({
-      message: 'User created successfully. Please verify your email.',
-      user: { id: newUser.id, firstname: newUser.firstname, email: newUser.email, token },
+      message: 'User created. Verification email sent.',
+      user: { id: newUser.id, email: newUser.email }
     });
-  } catch (error) {
+
+  } catch (err) {
+    console.error(err);
     return res.status(500).json({ message: 'Server error' });
   }
 };
