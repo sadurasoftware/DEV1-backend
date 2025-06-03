@@ -1,4 +1,5 @@
 const { User, Department } = require('../models');
+const CreateUser=require('../models/CreateUser');
 const { Role } = require('../models');
 const {RoleModulePermission,Module,Permission}=require('../models');
 const bcryptHelper = require('../utils/bcryptHelper');
@@ -6,6 +7,7 @@ const jwtHelper = require('../utils/jwtHelper');
 const emailHelper = require('../utils/emailHelper');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
+const { where } = require('sequelize');
 dotenv.config();
 
 const handleError = (res, error, message) => {
@@ -317,6 +319,35 @@ const logout = async (req, res) => {
     return handleError(res, error, 'Logout error');
   }
 };
+const setPassword = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({ message: 'Password is required' });
+    }
+
+    const { email } = jwtHelper.verifyToken(token, process.env.JWT_SECRET);
+
+    const user = await CreateUser.findOne({ where: { email } });
+
+    if (!user) {
+      return res.status(404).json({ message: 'Invalid token or user not found' });
+    }
+
+    const hashedPassword = await bcryptHelper.hashPassword(password);
+    user.password = hashedPassword;
+    user.isVerified = true;
+    await user.save();
+
+    return res.status(200).json({ message: 'Password set successfully. You can now log in.' });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: 'Token expired or server error' });
+  }
+};
 
 
 module.exports = {
@@ -328,5 +359,6 @@ module.exports = {
   forgetPassword,
   getResetPassword,
   resetPassword,
-  changePassword
+  changePassword,
+  setPassword
 }
