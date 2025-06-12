@@ -1,27 +1,87 @@
 const { Country, State, Location, Branch } = require('../models');
-const { Op, fn, col } = require('sequelize');
+const { Op, fn, col,where } = require('sequelize');
 const createCountry = async (req, res) => {
   try {
     const { name } = req.body;
-    const existing = await Country.findOne({ where: { name: name.trim() } });
-    if (existing) return res.status(400).json({ message: 'Country already exists' });
+    if (!name || !name.trim()) {
+      return res.status(400).json({ message: 'Country name is required' });
+    }
+    const trimmedName = name.trim();
+    const existing = await Country.findOne({
+      where: where(
+        fn('LOWER', col('Country.name')),
+        {
+          [Op.like]: trimmedName.toLowerCase()
+        }
+      )
+    });
 
-    const country = await Country.create({ name: name.trim() });
-    res.status(201).json(country);
+    if (existing) {
+      return res.status(409).json({ message: 'Country already exists' });
+    }
+    const formattedName =
+      trimmedName.charAt(0).toUpperCase() + trimmedName.slice(1).toLowerCase();
+
+    const country = await Country.create({ name: formattedName });
+    return res.status(201).json({ message: 'Country created successfully', country });
   } catch (error) {
-    res.status(500).json({ message: 'Error creating country', error: error.message });
+    console.error('Create country error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
 const getCountries = async (req, res) => {
   try {
-    const countries = await Country.findAll({include:'states'});
-    res.status(200).json(countries);
-  } catch (error) {
-    res.status(500).json({ message: 'Error fetching countries', error: error.message });
-  }
-}
+    const {
+      page = 1,
+      limit = 10,
+      search = '',
+      //isActive
+    } = req.query;
 
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const whereClause = {};
+    if (search) {
+      whereClause[Op.and] = [
+        where(fn('LOWER', col('Country.name')), {
+          [Op.like]: `%${search.toLowerCase()}%`
+        })
+      ];
+    }
+   
+    // if (isActive !== undefined) {
+    //   whereClause.isActive = isActive === 'true';
+    // }
+
+    const { rows: countries, count: total } = await Country.findAndCountAll({
+      where: whereClause,
+      include: [
+        {
+          model: State,
+          as: 'states' 
+        }
+      ],
+      offset,
+      limit: parseInt(limit),
+      order: [['name', 'ASC']]
+    });
+
+    res.status(200).json({
+      countries,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error fetching countries',
+      error: error.message
+    });
+  }
+};
 const getCountryById =async (req, res) => {
   try {
     const { id } = req.params;
@@ -36,14 +96,32 @@ const updateCountry = async (req, res) => {
   try {
     const { id } = req.params;
     const { name } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ message: 'Country name is required' });
+    }
+    const trimmedName = name.trim();
     const country = await Country.findByPk(id);
     if (!country) return res.status(404).json({ message: 'Country not found' });
-    const existing = await Country.findOne({ where: { name: name.trim() } });
-    if (existing && existing.id !== country.id) {
+    const existing = await Country.findOne({
+      where: {
+        [Op.and]: [
+          where(fn('LOWER', col('Country.name')), {
+            [Op.like]: trimmedName.toLowerCase()
+          }),
+          {
+            id: { [Op.ne]: id } 
+          }
+        ]
+      }
+    });
+    if (existing) {
       return res.status(400).json({ message: 'Country name already in use' });
     }
-    await country.update({ name: name.trim() });
-    res.status(200).json(country);
+    const formattedName =
+      trimmedName.charAt(0).toUpperCase() + trimmedName.slice(1).toLowerCase();
+
+    await country.update({ name: formattedName });
+    res.status(200).json({ message: 'Country updated successfully', country });
   } catch (error) {
     res.status(500).json({ message: 'Error updating country', error: error.message });
   }

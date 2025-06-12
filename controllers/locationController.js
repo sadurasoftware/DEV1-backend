@@ -1,27 +1,34 @@
 const { Location, State,Branch ,Country} = require('../models');
-const { Op, fn } = require('sequelize');
+const { Op, fn,col,where } = require('sequelize');
 
 const createLocation = async (req, res) => {
   try {
-    const { name,countryId,stateId } = req.body;
+    const { name, countryId, stateId } = req.body;
     if (!name || !countryId || !stateId) {
       return res.status(400).json({ message: 'Location name, countryId and stateId are required' });
     }
     const trimmedName = name.trim();
     const existing = await Location.findOne({
       where: {
-        name: fn('LOWER', trimmedName),
         countryId,
         stateId,
-      },
+        [Op.and]: [
+          where(fn('LOWER', col('Location.name')), {
+            [Op.like]: trimmedName.toLowerCase()
+          })
+        ]
+      }
     });
 
     if (existing) {
       return res.status(409).json({ message: 'Location already exists in this country and state' });
     }
-
-    const location = await Location.create({ name: trimmedName, countryId, stateId });
-
+    const formattedName = trimmedName.charAt(0).toUpperCase() + trimmedName.slice(1).toLowerCase();
+    const location = await Location.create({
+      name: formattedName,
+      countryId,
+      stateId,
+    });
     return res.status(201).json({ message: 'Location created successfully', location });
   } catch (error) {
     console.error('Create location error:', error);
@@ -30,11 +37,19 @@ const createLocation = async (req, res) => {
 };
 const getAllLocations = async (req, res) => {
   try {
-    const { stateId } = req.query;
-    const condition = stateId ? { where: { stateId } } : {};
+    const { page = 1,limit = 10,search = '',stateId,countryId } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const whereClause = {};
 
-    const locations = await Location.findAll({
-      ...condition,
+    if (stateId) whereClause.stateId = stateId;
+    if (countryId) whereClause.countryId = countryId;
+    if (search.trim()) {
+      whereClause.name = {
+        [Op.like]: `%${search.trim()}%`
+      };
+    }
+    const { count, rows: locations } = await Location.findAndCountAll({
+      where: whereClause,
       include: [
         {
           model: State,
@@ -50,9 +65,16 @@ const getAllLocations = async (req, res) => {
         },
       ],
       order: [['name', 'ASC']],
+      limit: parseInt(limit),
+      offset,
     });
 
-    return res.status(200).json({ locations });
+    return res.status(200).json({
+      total: count,
+      page: parseInt(page),
+      totalPages: Math.ceil(count / limit),
+      locations
+    });
   } catch (error) {
     console.error('Get locations error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -87,17 +109,25 @@ const updateLocation = async (req, res) => {
 
     const existing = await Location.findOne({
       where: {
-        id: { [Op.ne]: id },
-        name: fn('LOWER', trimmedName),
         countryId,
         stateId,
-      },
+        [Op.and]: [
+          where(fn('LOWER', col('Location.name')), {
+            [Op.like]: trimmedName.toLowerCase()
+          }),
+          {
+            id: { [Op.ne]: id }
+          }
+        ]
+      }
     });
 
     if (existing) {
       return res.status(409).json({ message: 'Another location with this name already exists in the same country and state' });
     }
-    location.name = trimmedName;
+    const formattedName = trimmedName.charAt(0).toUpperCase() + trimmedName.slice(1).toLowerCase();
+
+    location.name = formattedName;
     location.countryId = countryId;
     location.stateId = stateId;
     await location.save();
@@ -108,7 +138,6 @@ const updateLocation = async (req, res) => {
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
-
 const deleteLocation = async (req, res) => {
     try {
       const { id } = req.params;

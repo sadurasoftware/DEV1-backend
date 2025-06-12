@@ -10,15 +10,20 @@ const User = sequelize.define('User', {
   isVerified: { type: DataTypes.BOOLEAN, defaultValue: false }, 
   roleId:{ type:DataTypes.INTEGER, allowNull:false  },
   departmentId: { type: DataTypes.INTEGER, allowNull: true },
-  terms: { type: DataTypes.BOOLEAN, allowNull: false }, 
+  isActive: { type: DataTypes.BOOLEAN,defaultValue: true},
+  last_LoggedIn: { type: DataTypes.DATE, allowNull: true},
+  terms: { type: DataTypes.BOOLEAN, allowNull: false ,defaultValue:false}, 
 });
 
 User.associate = models => {
+  User.hasMany(models.UserInfo, {
+    foreignKey: 'userId',
+    as: 'usersInfo', 
+  })
   User.belongsTo(models.Role, {
     foreignKey: 'roleId',
     as: 'role',
   });
-
   User.belongsTo(models.Department, {
     foreignKey: 'departmentId',
     as: 'department',

@@ -1,5 +1,4 @@
 const { User, Department } = require('../models');
-const CreateUser=require('../models/CreateUser');
 const { Role } = require('../models');
 const {RoleModulePermission,Module,Permission}=require('../models');
 const bcryptHelper = require('../utils/bcryptHelper');
@@ -16,7 +15,7 @@ const handleError = (res, error, message) => {
 
 const register = async (req, res) => {
   try {
-    const { firstname, lastname, email, password, terms,department } = req.body;
+    const { firstname, lastname, email, password,department,terms} = req.body;
     // if (password !== confirmPassword) {
     //   return res.status(400).json({ message: 'Passwords do not match' });
     // }
@@ -47,6 +46,8 @@ const register = async (req, res) => {
       roleId: roleData.id,
       departmentId: departmentData.id,
       terms,
+      isActive: true,
+      last_LoggedIn: null
     });
     const tokenPayload = { id: newUser.id, email: newUser.email, firstname: newUser.firstname, lastname: newUser.lastname };
     const token = jwtHelper.generateToken(tokenPayload, process.env.JWT_SECRET, '10m');
@@ -57,10 +58,10 @@ const register = async (req, res) => {
       user: { id: newUser.id, firstname: newUser.firstname, email: newUser.email, token },
     });
   } catch (error) {
+    console.log(error)
     return res.status(500).json({message:'server error'});
   }
 };
-
 const resendVerificationEmail = async (req, res) => {
   try {
     const { email } = req.body;
@@ -79,7 +80,6 @@ const resendVerificationEmail = async (req, res) => {
     return handleError(res, error, 'Resend verification email error');
   }
 };
-
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -99,10 +99,14 @@ const login = async (req, res) => {
     if (!user.isVerified) {
       return res.status(403).json({ message: 'Email not verified. Please verify your email.' });
     } 
+    if (!user.isActive) {
+      return res.status(403).json({ message: 'Your account is inactive. Please contact admin.' });
+    }
     const isPasswordValid = await bcryptHelper.comparePassword(password, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
+    await user.update({ last_LoggedIn: new Date() });
     const tokenPayload = { id: user.id, email: user.email ,roleId: user.roleId};
     const token = jwtHelper.generateToken(tokenPayload, process.env.JWT_SECRET, '1h');
     res.cookie('authToken', token, {
@@ -136,6 +140,8 @@ const login = async (req, res) => {
         roleId: user.roleId,
         department: user.department ? user.department.name : null,
         isVerified: user.isVerified,
+        isActive: user.isActive,
+        last_LoggedIn: user.last_LoggedIn,
         terms: user.terms,
       };
       return res.status(200).json({
@@ -144,11 +150,10 @@ const login = async (req, res) => {
         permissions: permissionList
       });
   } catch (error) {
+    console.log(error)
     return res.status(500).json({message:'server error'});
   }
 };
-
-
 const verifyEmail = async (req, res) => {
   const { token } = req.params;
   if (!token) {
@@ -263,7 +268,6 @@ const getResetPassword = async (req, res) => {
     return res.status(400).json({ message: 'Invalid or expired token' });
   }
 };
-
 const resetPassword = async (req, res) => {
   const { token, newPassword } = req.body;
   if (!token || !newPassword) {
@@ -306,7 +310,6 @@ const changePassword = async (req, res) => {
     return res.status(500).json({ message: 'Server error', error });
   }
 };
-
 const logout = async (req, res) => {
   try {
     res.clearCookie('authToken', {
@@ -323,19 +326,14 @@ const setPassword = async (req, res) => {
   try {
     const { token } = req.params;
     const { password } = req.body;
-
     if (!password) {
       return res.status(400).json({ message: 'Password is required' });
     }
-
     const { email } = jwtHelper.verifyToken(token, process.env.JWT_SECRET);
-
     const user = await CreateUser.findOne({ where: { email } });
-
     if (!user) {
       return res.status(404).json({ message: 'Invalid token or user not found' });
     }
-
     const hashedPassword = await bcryptHelper.hashPassword(password);
     user.password = hashedPassword;
     user.isVerified = true;
@@ -348,7 +346,6 @@ const setPassword = async (req, res) => {
     return res.status(500).json({ message: 'Token expired or server error' });
   }
 };
-
 
 module.exports = {
   register,

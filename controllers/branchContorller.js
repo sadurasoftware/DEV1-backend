@@ -1,5 +1,5 @@
 const { Branch, Location,State,Country } = require('../models');
-const { Op, fn } = require('sequelize');
+const { Op, fn ,col, where } = require('sequelize');
 
 const createBranch = async (req, res) => {
   try {
@@ -13,21 +13,24 @@ const createBranch = async (req, res) => {
     const trimmedName = name.trim();
     const exists = await Branch.findOne({
       where: {
-        name: fn('LOWER', trimmedName),
         pincode,
-        locationId,
-        stateId,
         countryId,
-      },
+        stateId,
+        locationId,
+        [Op.and]: [
+          where(fn('LOWER', col('Branch.name')), trimmedName.toLowerCase())
+        ]
+      }
     });
-
     if (exists) {
       return res.status(409).json({
         message: 'Branch already exists with the same name and pincode in this /state/country/location',
       });
     }
+    const formattedName = trimmedName.charAt(0).toUpperCase() + trimmedName.slice(1).toLowerCase();
+
     const branch = await Branch.create({
-      name: trimmedName,
+      name: formattedName,
       pincode,
       countryId,
       stateId,
@@ -44,11 +47,21 @@ const createBranch = async (req, res) => {
 };
 const getAllBranches = async (req, res) => {
   try {
-    const { locationId } = req.query;
-    const condition = locationId ? { where: { locationId } } : {};
+    const {page = 1,limit = 10,search = '',countryId,stateId,locationId,} = req.query;
 
-    const branches = await Branch.findAll({
-      ...condition,
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const whereClause = {};
+
+    if (locationId) whereClause.locationId = locationId;
+    if (stateId) whereClause.stateId = stateId;
+    if (countryId) whereClause.countryId = countryId;
+    if (search.trim()) {
+      whereClause.name = {
+        [Op.like]: `%${search.trim()}%`
+      };
+    }
+    const { count, rows: branches } = await Branch.findAndCountAll({
+      where: whereClause,
       include: [
         {
           model: Location,
@@ -71,15 +84,21 @@ const getAllBranches = async (req, res) => {
         }
       ],
       order: [['name', 'ASC']],
+      limit: parseInt(limit),
+      offset,
     });
 
-    return res.status(200).json({ branches });
+    return res.status(200).json({
+      total: count,
+      page: parseInt(page),
+      totalPages: Math.ceil(count / limit),
+      branches
+    });
   } catch (error) {
     console.error('Get branches error:', error);
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
-
 const getBranchById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -109,29 +128,31 @@ const updateBranch = async (req, res) => {
     if (!branch) {
       return res.status(404).json({ message: 'Branch not found' });
     }
-
     const existing = await Branch.findOne({
       where: {
         id: { [Op.ne]: id },
-        name: fn('LOWER', trimmedName),
         pincode,
-        countryId,
-        stateId,
         locationId,
-      },
+        stateId,
+        countryId,
+        [Op.and]: [
+          where(fn('LOWER', col('Branch.name')), trimmedName.toLowerCase())
+        ]
+      }
     });
-
     if (existing) {
       return res.status(409).json({
         message: 'Another branch with this name and pincode already exists in the same /state/countrylocation',
       });
     }
-    branch.name = trimmedName;
+    const formattedName = trimmedName.charAt(0).toUpperCase() + trimmedName.slice(1).toLowerCase();
+
+    branch.name = formattedName;
     branch.pincode = pincode;
-    branch.countryId = countryId;
-    branch.stateId = stateId;
     branch.locationId = locationId;
-    
+    branch.stateId = stateId;
+    branch.countryId = countryId;
+
     await branch.save();
     return res.status(200).json({ message: 'Branch updated successfully', branch });
   } catch (error) {

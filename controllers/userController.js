@@ -4,11 +4,10 @@ const {Role,User,Department,Ticket,TicketAttachment,Comment,CommentAttachment,Ti
 const bcryptHelper = require('../utils/bcryptHelper');
 const jwtHelper = require('../utils/jwtHelper');
 const emailHelper = require('../utils/emailHelper');
-const { deleteFileFromS3, deleteS3Folder } = require('../utils/fileHelper');
+const { deleteFileFromS3, deleteS3Folder} = require('../utils/fileHelper');
 const { Designation,Country,State,Location,Branch } = require('../models');
-const CreateUser=require('../models/CreateUser');
-
-
+const UserInfo=require('../models/UserInfo');
+const { createProfilePictureUpload } =require('../utils/fileHelper');
 const createUser = async (req, res) => {
   try {
     const createdBy = req.user.id;
@@ -16,6 +15,7 @@ const createUser = async (req, res) => {
       firstName,
       lastName,
       email,
+      password,
       phone,
       address,
       profilePicture,
@@ -31,15 +31,18 @@ const createUser = async (req, res) => {
       terms
     } = req.body;
     
-    if (!firstName || !lastName || !email || !phone) {
+    if (!firstName || !lastName || !email || !password || !phone) {
       return res.status(400).json({ message: 'Required fields are missing' });
     }
     const phoneRegex = /^[6-9]\d{9}$/;
     if (!phoneRegex.test(phone)) {
       return res.status(400).json({ message: 'Invalid phone number format' });
     }
-
-    const existingUser = await CreateUser.findOne({ where: { email } });
+    const existingPhone = await UserInfo.findOne({ where: { phone } });
+    if (existingPhone) {
+      return res.status(400).json({ message: 'Phone number already exists' });
+    }
+    const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
@@ -59,35 +62,50 @@ const createUser = async (req, res) => {
     if (!department) return res.status(400).json({ message: 'Invalid department name' });
     if (!designation) return res.status(400).json({ message: 'Invalid designation name' });
     
-    const hashedDummyPassword = await bcryptHelper.hashPassword('admin123');
-    const newUser = await CreateUser.create({
-      firstName,
-      lastName,
+    const hashedPassword = await bcryptHelper.hashPassword(password);
+    const newUser = await User.create({
+      firstname: firstName,
+      lastname: lastName,
       email,
-      password: hashedDummyPassword,
+      password: hashedPassword,
+      roleId: role.id,
+      departmentId: department.id,
+      isVerified: false,
+      isActive: true,
+      last_LoggedIn: null,
+      terms,
+    });
+    await UserInfo.create({
+      userId: newUser.id,
       phone,
       address,
-      profilePicture,
+      profilePicture:null,
       gender,
       blood_group,
       country_id: country.id,
       state_id: state.id,
       location_id: location.id,
       branch_id: branch.id,
-      roleId: role.id,
-      departmentId: department.id,
       designationId: designation.id,
-      isVerified: false,
-      terms,
       createdBy,
       updatedBy: createdBy,
+      terms,
+      isVerified: false,
     });
 
     const tokenPayload = { id: newUser.id, email: newUser.email };
+    
     const token = jwtHelper.generateToken(tokenPayload, process.env.JWT_SECRET, '1d');
 
-    const verifyUrl = `${process.env.VERIFICATION_URL}/set-password/${token}`;
-    await emailHelper.sendSetPasswordEmail(newUser.email, newUser.firstName, verifyUrl);
+    const loginUrl = `${process.env.USER_LOGIN_URL}/verify-email/${token}`;
+    await emailHelper.sendUserWelcomeEmail(
+      newUser.email,
+      firstName,
+      lastName,
+      email,
+      password, 
+      loginUrl
+    );
 
     return res.status(201).json({
       message: 'User created. Verification email sent.',
@@ -96,6 +114,40 @@ const createUser = async (req, res) => {
 
   } catch (err) {
     console.error(err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+const uploadProfilePicture = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const user = await User.findByPk(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const firstName = user.firstname;
+    const lastName = user.lastname;
+
+    const dynamicUpload = createProfilePictureUpload(firstName, lastName).single('profilePicture');
+
+    dynamicUpload(req, res, async function (err) {
+      if (err) {
+        return res.status(400).json({ message: err.message });
+      }
+      if (!req.file) {
+        return res.status(400).json({ message: 'No profile picture uploaded' });
+      }
+      const profilePictureUrl = req.file.location;
+      await UserInfo.update(
+        { profilePicture: profilePictureUrl },
+        { where: { userId } }
+      );
+      return res.status(200).json({
+        message: 'Profile picture uploaded successfully',
+        url: profilePictureUrl,
+      });
+    });
+  } catch (error) {
+    console.error('uploadProfilePicture error:', error);
     return res.status(500).json({ message: 'Server error' });
   }
 };
@@ -126,6 +178,23 @@ async function fetchUserData(req, res) {
     return res.status(500).json({ message: 'Server error' });
   }
 }
+const updateUserStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isActive } = req.body;
+
+    const user = await User.findByPk(id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.isActive = isActive;
+    await user.save();
+
+    return res.status(200).json({ message: 'User status updated successfully', user });
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error', error });
+  }
+};
+
 async function updateUser(req, res) {
   try {
     const { id } = req.params;
@@ -378,10 +447,53 @@ async function deleteUser(req, res) {
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 }
+const getActiveUsers = async (req, res) => {
+  try {
+    const {page = 1,limit = 10,search = '',departmentId} = req.query;
+    const offset = (page - 1) * limit;
+    const whereUser = {
+      isActive: true,
+      [Op.or]: [
+        { firstname: { [Op.like]: `%${search}%` } },
+        { lastname: { [Op.like]: `%${search}%` } },
+        { email: { [Op.like]: `%${search}%` } }
+      ]
+    };
+    const whereUserInfo = {};
+    if (departmentId) whereUserInfo.departmentId = departmentId;
+
+    const { count, rows } = await User.findAndCountAll({
+      where: whereUser,
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      attributes: ['id', 'firstname', 'lastname', 'email', 'departmentId','isVerified'], 
+          include: [
+            {
+              model: Department,
+              as: 'department',
+              attributes: ['id', 'name']
+            }
+          ]
+        }
+    );
+    res.status(200).json({
+      totalUsers: count,
+      totalPages: Math.ceil(count / limit),
+      currentPage: parseInt(page),
+      users: rows
+    });
+  } catch (error) {
+    console.error('Error in getActiveUsers:', error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
 module.exports = {
   createUser,
+  uploadProfilePicture,
+  getActiveUsers,
   getUser,
   fetchUserData,
+  updateUserStatus,
   updateUser,
   getUsers,
   getAdmins,
