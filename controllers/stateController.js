@@ -1,5 +1,5 @@
 const { State, Country, Branch,Location} = require('../models');
-const { Op, fn, col } = require('sequelize');
+const { Op, fn, col ,where} = require('sequelize');
 
 const createState = async (req, res) => {
   try {
@@ -10,9 +10,13 @@ const createState = async (req, res) => {
     const trimmedName = name.trim();
     const existing = await State.findOne({
       where: {
-        name: fn('LOWER', trimmedName),
         countryId,
-      },
+        [Op.and]: [
+          where(fn('LOWER', col('State.name')), {
+            [Op.like]: trimmedName.toLowerCase()
+          })
+        ]
+      }
     });
     if (existing) {
       return res.status(409).json({ message: 'State already exists in this country' });
@@ -26,32 +30,54 @@ const createState = async (req, res) => {
 };
 const getAllStates = async (req, res) => {
   try {
-    const { countryId } = req.query;
-    const condition = countryId ? { where: { countryId } } : {};
-    const states = await State.findAll({
-      ...condition,
+    const {countryId, search = '',page = 1,limit = 10 } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const whereClause = {};
+    if (countryId) {
+      whereClause.countryId = countryId;
+    }
+    if (search) {
+      whereClause[Op.and] = [
+        where(fn('LOWER', col('State.name')), {
+          [Op.like]: `%${search.toLowerCase()}%`
+        })
+      ];
+    }
+    // if (isActive !== undefined) {
+    //   whereClause.isActive = isActive === 'true';
+    // }
+    const { rows: states, count: total } = await State.findAndCountAll({
+      where: whereClause,
       include: [
         {
           model: Country,
           as: 'country',
-          attributes: ['id', 'name'],
+          attributes: ['id', 'name']
         },
         {
           model: Location,
           as: 'locations',
-          attributes: ['id', 'name'],
-        },
+          attributes: ['id', 'name']
+        }
       ],
-      order: [['name', 'ASC']],
+      offset,
+      limit: parseInt(limit),
+      order: [['name', 'ASC']]
     });
-    return res.status(200).json({ states });
+    return res.status(200).json({
+      states,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (error) {
     console.error('Get states error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
-
-
 const getStateById =async (req, res) => {
   try {
     const { id } = req.params;
@@ -79,18 +105,26 @@ const updateState = async (req, res) => {
     }
     const existing = await State.findOne({
       where: {
-        id: { [Op.ne]: id },
-        name: fn('LOWER', trimmedName),
         countryId,
-      },
+        [Op.and]: [
+          where(fn('LOWER', col('State.name')), {
+            [Op.like]: trimmedName.toLowerCase()
+          }),
+          {
+            id: { [Op.ne]: id } 
+          }
+        ]
+      }
     });
     if (existing) {
       return res.status(409).json({ message: 'Another state with the same name exists in this country' });
     }
-    state.name = trimmedName;
+    const formattedName =
+      trimmedName.charAt(0).toUpperCase() + trimmedName.slice(1).toLowerCase();
+
+    state.name = formattedName;
     state.countryId = countryId;
     await state.save();
-
     return res.status(200).json({ message: 'State updated successfully', state });
   } catch (error) {
     console.error('Update state error:', error);
@@ -111,13 +145,10 @@ const deleteState = async (req, res) => {
           },
         },
       });
-  
       if (!state) {
         return res.status(404).json({ message: 'State not found' });
       }
-  
       await state.destroy(); 
-  
       res.status(200).json({ message: 'State and its related data deleted successfully' });
     } catch (error) {
       console.error('Delete State Error:', error);

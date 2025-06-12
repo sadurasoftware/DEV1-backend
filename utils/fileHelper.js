@@ -126,15 +126,43 @@ const deleteFileFromS3 = async (key) => {
     throw err;
   }
 };
+const createProfilePictureUpload = (firstName, lastName) => {
+  return multer({
+    storage: multerS3({
+      s3: s3,
+      bucket: process.env.S3_BUCKET_NAME,
+      contentType: multerS3.AUTO_CONTENT_TYPE,
+      acl: 'public-read',
+      key: (req, file, cb) => {
+        try {
+          const folderName = `${firstName.trim().toLowerCase()}-${lastName.trim().toLowerCase()}`;
+          const uniqueFilename = `${Date.now()}-${file.originalname}`;
+          const key = `profile_pictures/${folderName}/${uniqueFilename}`;
 
+          req.profilePictureKey = key;
+          cb(null, key);
+        } catch (err) {
+          cb(err);
+        }
+      },
+    }),
+    fileFilter,
+    limits: {
+      fileSize: MAX_IMAGE_SIZE,
+      files: 1,
+    },
+  });
+};
 
 module.exports = {
   upload,
   getImageUrl,
   deleteS3Folder,
   deleteFileFromS3,
+  createProfilePictureUpload,
   MAX_IMAGE_SIZE,
   MAX_VIDEO_SIZE,
   imageTypes,
-  videoTypes
+  videoTypes,
+ 
 };

@@ -1,5 +1,6 @@
 const Joi = require('joi');
 const { getDesignationById } = require('../controllers/designationController');
+const { Department } = require('../models');
 
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 //register
@@ -50,12 +51,12 @@ const registerSchema = Joi.object({
     'any.required': `"Terms" is required`,
   }),
   department: Joi.string()
-    .trim()
-    .optional()
-    .allow(null, '')
-    .messages({
-      'string.empty': `"Department" cannot be empty`,
-    }),
+  .trim()
+  .optional()
+  .allow(null, '')
+  .messages({
+    'string.empty': `"Department" cannot be empty`,
+  }),
 });
 
 //login
@@ -327,19 +328,57 @@ const createUservalidator = Joi.object({
       'string.empty': `"Password" cannot be empty`,
       'any.required': `"Password" is required`,
     }),
+    phone: Joi.string()
+    .pattern(/^[0-9]+$/)
+    .min(10)
+    .max(10)
+    .required()
+    .messages({
+      'string.pattern.base': `"Phone number" can only contain numbers`,
+      'string.empty': `"Phone number" cannot be empty`,
+      'string.min': `"Phone number" should have at least {#limit} characters`,
+      'string.max': `"Phone number" should have at most {#limit} characters`,
+      'any.required': `"Phone number" is required`,
+    }),
+    address : Joi.string().required().messages({
+      'string.empty': `"Address" cannot be empty`,
+      'any.required': `"Address" is required`,
+    }),
+    // profilePicture: Joi.string().uri().allow('', null).messages({
+    //   'string.empty': `"Profile picture" cannot be empty`,
+    //   'any.required': `"Profile picture" is required`,
+    // }),
+    gender : Joi.string().valid('Male', 'Female','Other').required().messages({
+      'string.empty': `"Gender" cannot be empty`,
+      'any.required': `"Gender" is required`,
+    }),
+    blood_group : Joi.string().valid('A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-').required().messages({
+      'string.empty': `"Blood group" cannot be empty`,
+      'any.required': `"Blood group" is required`,
+    }),
+    countryName : Joi.string().required().messages({
+      'string.empty': `"Country name" cannot be empty`,
+      'any.required': `"Country name" is required`,
+    }),
+    stateName : Joi.string().required().messages({
+      'string.empty': `"State name" cannot be empty`,
+      'any.required': `"State name" is required`,
+    }),
+    locationName : Joi.string().required().messages({
+      'string.empty': `"Location name" cannot be empty`,
+      'any.required': `"Location name" is required`,
+    }),
+    branchName : Joi.string().required().messages({
+      'string.empty': `"Branch name" cannot be empty`,
+      'any.required': `"Branch name" is required`,
+    }),
+    designationName : Joi.string().required().messages({
+      'string.empty': `"Designation name" cannot be empty`,
+      'any.required': `"Designation name" is required`,
+    }),
   terms: Joi.boolean().valid(true).required().messages({
     'any.only': `"Terms" must be accepted`,
     'any.required': `"Terms" is required`,
-  }),
-  role: Joi.string().required().messages({
-    'string.empty': `"Role" cannot be empty`,
-    'any.required': `"Role" is required`,
-  }),
-  departmentId: Joi.number()
-  .optional()
-  .allow(null)
-  .messages({
-    'number.base': `"Department ID" must be a number`,
   }),
 });
 
