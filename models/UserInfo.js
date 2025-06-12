@@ -1,28 +1,16 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-const CreateUser = sequelize.define('CreateUser', {
+const UserInfo = sequelize.define('UserInfo', {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
     },
-    firstName: {
-      type: DataTypes.STRING,
+    userId: {
+      type: DataTypes.INTEGER,
       allowNull: false,
-    },
-    lastName :{
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    email: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    password :{
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
+   },
     phone: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -40,17 +28,9 @@ const CreateUser = sequelize.define('CreateUser', {
         allowNull: true,
       },
       blood_group: {
-        type: DataTypes.DATEONLY,
+        type: DataTypes.STRING,
         allowNull: true,
       },
-    roleId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-    },
-    departmentId: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-    },
     designationId: {
       type: DataTypes.INTEGER,
       allowNull: true,
@@ -70,15 +50,6 @@ const CreateUser = sequelize.define('CreateUser', {
     branch_id: {
         type: DataTypes.INTEGER,
         allowNull: false
-    },
-    isVerified: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: false,
-    },
-    terms: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
     },
     createdAt: {
       type: DataTypes.DATE,
@@ -102,43 +73,35 @@ const CreateUser = sequelize.define('CreateUser', {
     timestamps: true
   });
 
-  CreateUser.associate = models => {
-    CreateUser.belongsTo(models.Role, {
-      foreignKey: 'roleId',
-      as: 'role',
+  UserInfo.associate = models => {
+    UserInfo.belongsTo(models.User, {
+      foreignKey: 'userId',
+      as: 'users',
     });
-  
-    CreateUser.belongsTo(models.Department, {
-      foreignKey: 'departmentId',
-      as: 'department',
-    });
-  
-    CreateUser.belongsTo(models.Designation, {
+    UserInfo.belongsTo(models.Designation, {
       foreignKey: 'designationId',
       as: 'designation',
     });
-  
-    CreateUser.belongsTo(models.User, {
+    UserInfo.belongsTo(models.User, {
       foreignKey: 'createdBy',
       as: 'createdByUser',
     });
-  
-    CreateUser.belongsTo(models.User, {
+   UserInfo.belongsTo(models.User, {
       foreignKey: 'updatedBy',
       as: 'updatedByUser',
     });
-    CreateUser.belongsTo(models.Country, {
+    UserInfo.belongsTo(models.Country, {
       foreignKey: 'country_id',
       as: 'country',
     });
-    CreateUser.belongsTo(models.State, {
+    UserInfo.belongsTo(models.State, {
       foreignKey: 'state_id',
       as: 'state',
     });
-    CreateUser.belongsTo(models.Branch, {
+    UserInfo.belongsTo(models.Branch, {
       foreignKey: 'branch_id',
       as: 'branch',
     });
   };
 
-  module.exports = CreateUser;
+  module.exports = UserInfo;

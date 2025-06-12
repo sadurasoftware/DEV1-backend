@@ -1,5 +1,5 @@
 const { Designation, Department } = require('../models');
-const { Op, fn, col } = require('sequelize');
+const { Op, fn, col ,where} = require('sequelize');
 
 const createDesignation = async (req, res) => {
   try {
@@ -7,9 +7,7 @@ const createDesignation = async (req, res) => {
     const trimmedName = name.trim();
 
     const existing = await Designation.findOne({
-      where: {
-        name: fn('LOWER', trimmedName),
-      },
+      where: where(fn('LOWER', col('name')), trimmedName.toLowerCase())
     });
 
     if (existing) {
@@ -22,16 +20,40 @@ const createDesignation = async (req, res) => {
     return res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
-
 const getAllDesignations = async (req, res) => {
   try {
-    const designations = await Designation.findAll();
-    return res.status(200).json({ message: 'Designations fetched Successfully', designations });
+    const { page = 1, limit = 10, search = '' } = req.query;
+
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const searchTerm = search.trim().toLowerCase();
+
+    const whereCondition = searchTerm
+      ? where(fn('LOWER', col('name')), { [Op.like]: `%${searchTerm}%` })
+      : {};
+
+    const { rows: designations, count: total } = await Designation.findAndCountAll({
+      where: whereCondition,
+      offset: parseInt(offset),
+      limit: parseInt(limit),
+      order: [['name', 'ASC']]
+    });
+
+    return res.status(200).json({
+      message: 'Designations fetched successfully',
+      data: designations,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+
   } catch (err) {
     console.error('Get Designation Error:', err);
-    return res.status(500).json({ message: 'An error occurred while fetching designation'});
+    return res.status(500).json({ message: 'An error occurred while fetching designations', error: err.message });
   }
-}
+};
 const updateDesignation = async (req, res) => {
   try {
     const { id } = req.params;
@@ -41,13 +63,14 @@ const updateDesignation = async (req, res) => {
     const designation = await Designation.findByPk(id);
     if (!designation) return res.status(404).json({ message: 'Designation not found' });
 
-    const exists = await Designation.findOne({
+    const existing = await Designation.findOne({
       where: {
         id: { [Op.ne]: id },
-        name: fn('LOWER', trimmedName),
+        [Op.and]: where(fn('LOWER', col('name')), trimmedName.toLowerCase()),
       },
     });
-    if (exists) {
+
+    if (existing) {
       return res.status(409).json({ message: 'Another designation with this name already exists' });
     }
     designation.name = trimmedName;

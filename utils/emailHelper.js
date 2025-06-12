@@ -89,6 +89,41 @@ const sendSetPasswordEmail = async (to, url, username) => {
         console.error(`Error sending set password email: ${error.message}`);
     }
 };
+const sendUserWelcomeEmail = async (to, firstName, lastName, email, plainPassword, loginUrl) => {
+    try {
+      const fullName = `${firstName} ${lastName}`;
+      await transporter.sendMail({
+        from: process.env.APP_EMAIL,
+        to,
+        subject: 'Welcome to Our System!',
+        html: `
+          <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ccc; max-width: 600px;">
+            <h2 style="color: #2c3e50;">Hi ${fullName},</h2>
+            <p>Welcome to our platform. Your account has been created successfully.</p>
+  
+            <h4>Your Login Credentials:</h4>
+            <ul style="line-height: 1.6;">
+              <li><strong>Email:</strong> ${email}</li>
+              <li><strong>Password:</strong> ${plainPassword}</li>
+            </ul>
+  
+            <p style="margin-top: 20px;">
+              <a href="${loginUrl}" 
+                style="background-color: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                Click here to Login
+              </a>
+            </p>
+  
+            <p style="margin-top: 30px;">If you did not request this, please contact our support team.</p>
+          </div>
+        `
+      });
+      console.log(`Welcome email sent to ${to}`);
+    } catch (error) {
+      console.error(`Error sending welcome email: ${error.message}`);
+    }
+  };
+  
 
 
 
@@ -96,5 +131,6 @@ module.exports = {
     verificationEmail,
     forgotPasswordEmail,
     ticketAssignedEmail,
-    sendSetPasswordEmail
+    sendSetPasswordEmail,
+    sendUserWelcomeEmail
 }
