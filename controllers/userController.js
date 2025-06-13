@@ -91,11 +91,8 @@ const createUser = async (req, res) => {
       terms,
       isVerified: false,
     });
-
     const tokenPayload = { id: newUser.id, email: newUser.email };
-    
     const token = jwtHelper.generateToken(tokenPayload, process.env.JWT_SECRET, '1d');
-
     const loginUrl = `${process.env.USER_LOGIN_URL}/verify-email/${token}`;
     await emailHelper.sendUserWelcomeEmail(
       newUser.email,
@@ -105,18 +102,15 @@ const createUser = async (req, res) => {
       password, 
       loginUrl
     );
-
     return res.status(201).json({
       message: 'User created. Verification email sent.',
       user: { id: newUser.id, email: newUser.email }
     });
-
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: 'Server error' });
   }
 };
-
 const uploadProfilePicture = async (req, res) => {
   try {
     const userId = req.params.id;
@@ -125,7 +119,6 @@ const uploadProfilePicture = async (req, res) => {
 
     const firstName = user.firstname;
     const lastName = user.lastname;
-
     const dynamicUpload = createProfilePictureUpload(firstName, lastName).single('profilePicture');
 
     dynamicUpload(req, res, async function (err) {
@@ -165,7 +158,6 @@ async function getUser(req, res) {
     return res.status(500).json({ message: 'Server error' });
   }
 }
-
 async function fetchUserData(req, res) {
   try {
     const {id} = req.params; 
@@ -196,7 +188,6 @@ const updateUserStatus = async (req, res) => {
     return res.status(500).json({ message: 'Server error', error });
   }
 };
-
 const updateUser = async (req, res) => {
   try {
     const updatedBy = req.user.id; 
@@ -330,7 +321,6 @@ const getUsers = async (req, res) => {
     return res.status(500).json({ message: 'Server Error', error: err.message });
   }
 };
-
 const getAdmins = async (req, res) => {
   try {
     const { page = 1, limit = 10, search, departmentName } = req.query;
@@ -348,9 +338,7 @@ const getAdmins = async (req, res) => {
     if (departmentName) {
       departmentWhere.name = { [Op.like]: `%${departmentName}%` };
     }
-
     const offset = (page - 1) * limit;
-
     const { rows: admins, count } = await User.findAndCountAll({
       where: whereClause,
       include: [
@@ -379,7 +367,6 @@ const getAdmins = async (req, res) => {
     return res.status(500).json({ message: 'Server Error', error: err.message });
   }
 };
-
 async function getAdmin(req, res) {
   try {
     const {id}=req.params;
