@@ -19,6 +19,9 @@ const s3 = new S3Client({
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   },
 });
+const PROFILE_PICTURES_SIZE= 2 * 1024 * 1024;
+const allowedImageTypes = ['image/jpeg', 'image/png'];
+const allowedExtensions_Profile = ['.jpg', '.jpeg', '.png'];
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; 
 const MAX_VIDEO_SIZE = 10 * 1024 * 1024; 
@@ -26,7 +29,20 @@ const MAX_VIDEO_SIZE = 10 * 1024 * 1024;
 const imageTypes = ['image/jpeg', 'image/png'];
 const videoTypes = ['video/mp4', 'video/x-matroska'];
 const allowedExtensions = ['.jpg', '.jpeg', '.png', '.mp4', '.mkv'];
+const profile_pictures_fileFilter = (req, file, cb) => {
+  const ext = path.extname(file.originalname).toLowerCase();
+  const mime = file.mimetype;
 
+  if (!allowedImageTypes.includes(mime)) {
+    return cb(new Error('Only JPG and PNG image files are allowed'), false);
+  }
+
+  if (!allowedExtensions_Profile.includes(ext)) {
+    return cb(new Error('Invalid file extension. Use JPG or PNG only'), false);
+  }
+
+  cb(null, true);
+};
 const fileFilter = (req, file, cb) => {
   const ext = path.extname(file.originalname).toLowerCase();
   const mime = file.mimetype;
@@ -146,9 +162,9 @@ const createProfilePictureUpload = (firstName, lastName) => {
         }
       },
     }),
-    fileFilter,
+    fileFilter:profile_pictures_fileFilter,
     limits: {
-      fileSize: MAX_IMAGE_SIZE,
+      fileSize: PROFILE_PICTURES_SIZE,
       files: 1,
     },
   });
@@ -162,7 +178,11 @@ module.exports = {
   createProfilePictureUpload,
   MAX_IMAGE_SIZE,
   MAX_VIDEO_SIZE,
+  PROFILE_PICTURES_SIZE,
   imageTypes,
   videoTypes,
+  allowedImageTypes,
+  allowedExtensions,
+  allowedExtensions_Profile
  
 };
