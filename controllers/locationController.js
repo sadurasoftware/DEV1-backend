@@ -37,17 +37,25 @@ const createLocation = async (req, res) => {
 };
 const getAllLocations = async (req, res) => {
   try {
-    const { page = 1,limit = 10,search = '',stateId,countryId } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
-    const whereClause = {};
+    const { search = '', page = 1, limit = 10 } = req.query;
+    const offset = (page - 1) * limit;
 
-    if (stateId) whereClause.stateId = stateId;
-    if (countryId) whereClause.countryId = countryId;
-    if (search.trim()) {
-      whereClause.name = {
-        [Op.like]: `%${search.trim()}%`
-      };
-    }
+    const whereClause = search
+      ? {
+          [Op.or]: [
+            where(fn('LOWER', col('Location.name')), {
+              [Op.like]: `%${search.toLowerCase()}%`,
+            }),
+            where(fn('LOWER', col('state.name')), {
+              [Op.like]: `%${search.toLowerCase()}%`,
+            }),
+            where(fn('LOWER', col('state.country.name')), {
+              [Op.like]: `%${search.toLowerCase()}%`,
+            }),
+          ],
+        }
+      : {};
+
     const { count, rows: locations } = await Location.findAndCountAll({
       where: whereClause,
       include: [
@@ -65,22 +73,21 @@ const getAllLocations = async (req, res) => {
         },
       ],
       order: [['name', 'ASC']],
+      offset: parseInt(offset),
       limit: parseInt(limit),
-      offset,
     });
 
     return res.status(200).json({
       total: count,
       page: parseInt(page),
       totalPages: Math.ceil(count / limit),
-      locations
+      locations,
     });
   } catch (error) {
     console.error('Get locations error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
-
 const getLocationsById =async (req, res) => {
   try {
     const { id } = req.params;

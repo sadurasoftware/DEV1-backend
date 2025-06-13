@@ -30,54 +30,40 @@ const createState = async (req, res) => {
 };
 const getAllStates = async (req, res) => {
   try {
-    const {countryId, search = '',page = 1,limit = 10 } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const { search, page = 1, limit = 10 } = req.query;
+    const offset = (page - 1) * limit;
     const whereClause = {};
-    if (countryId) {
-      whereClause.countryId = countryId;
-    }
     if (search) {
-      whereClause[Op.and] = [
-        where(fn('LOWER', col('State.name')), {
-          [Op.like]: `%${search.toLowerCase()}%`
-        })
-      ];
+      whereClause.name = {
+        [Op.like]: `%${search.trim().toLowerCase()}%`
+      };
     }
-    // if (isActive !== undefined) {
-    //   whereClause.isActive = isActive === 'true';
-    // }
-    const { rows: states, count: total } = await State.findAndCountAll({
+    const { count, rows: states } = await State.findAndCountAll({
       where: whereClause,
       include: [
         {
           model: Country,
           as: 'country',
-          attributes: ['id', 'name']
-        },
-        {
-          model: Location,
-          as: 'locations',
-          attributes: ['id', 'name']
+          attributes: ['id', 'name'],
         }
       ],
-      offset,
+      order: [['name', 'ASC']],
+      offset: parseInt(offset),
       limit: parseInt(limit),
-      order: [['name', 'ASC']]
     });
+
     return res.status(200).json({
+      total: count,
+      page: parseInt(page),
+      totalPages: Math.ceil(count / limit),
       states,
-      pagination: {
-        total,
-        page: parseInt(page),
-        limit: parseInt(limit),
-        totalPages: Math.ceil(total / limit)
-      }
     });
   } catch (error) {
     console.error('Get states error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
 const getStateById =async (req, res) => {
   try {
     const { id } = req.params;
