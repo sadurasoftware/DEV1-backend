@@ -8,9 +8,9 @@ const router=express.Router();
 
 
 router.post('/create',authenticateToken,checkPermission("User","create"),validator.createUservalidator,userController.createUser)
-router.put('/users/:id/upload-profile-picture', userController.uploadProfilePicture);
-router.put('/users/:id/status', userController.updateUserStatus);
-router.get('/active', userController.getActiveUsers)
+router.put('/users/:id/upload-profile-picture',authenticateToken, userController.uploadProfilePicture);
+router.put('/users/:id/status',authenticateToken,checkRole('superadmin','admin'),validator.updateUserStatusSchemaParams,validator.updateUserStatusSchema, userController.updateUserStatus);
+router.get('/active',authenticateToken,checkRole('superadmin','admin'), userController.getActiveUsers)
 router.get('/users', userController.getUsers)
 router.get('/admins',authenticateToken,checkRole('superadmin','admin'), userController.getAdmins)
 router.get('/', authenticateToken,checkRole('superadmin','admin'),userController.getUsers)

@@ -18,7 +18,6 @@ const createUser = async (req, res) => {
       password,
       phone,
       address,
-      profilePicture,
       gender,
       blood_group,
       countryName,
@@ -131,6 +130,9 @@ const uploadProfilePicture = async (req, res) => {
 
     dynamicUpload(req, res, async function (err) {
       if (err) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(400).json({ message: 'Profile picture must be less than 2MB' });
+        }
         return res.status(400).json({ message: err.message });
       }
       if (!req.file) {
@@ -195,39 +197,91 @@ const updateUserStatus = async (req, res) => {
   }
 };
 
-async function updateUser(req, res) {
+const updateUser = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { firstname, lastname, email, departmentId, role: roleName } = req.body;
-    const user = await User.findByPk(id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    const allowedRoles = ['superadmin', 'admin'];
-    const userRole = await Role.findByPk(req.user.roleId); 
-    if (!allowedRoles.includes(userRole.name) && req.user.id !== parseInt(id)) {
-      return res.status(403).json({ message: 'You are not authorized to update this user.' });
+    const updatedBy = req.user.id; 
+    const userId = req.params.id;
+    const {
+      firstName,
+      lastName,
+      //email,
+      //password,
+      phone,
+      address,
+      gender,
+      blood_group,
+      countryName,
+      stateName,
+      locationName,
+      branchName,
+      departmentName,
+      designationName,
+    } = req.body;
+
+    const user = await User.findByPk(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const userInfo = await UserInfo.findOne({ where: { userId } });
+
+    // let roleId = user.roleId;
+    // if (roleName) {
+    //   const role = await Role.findOne({ where: { name: roleName } });
+    //   if (!role) return res.status(400).json({ message: 'Invalid role' });
+    //   roleId = role.id;
+    // }
+    const country = countryName ? await Country.findOne({ where: { name: countryName } }) : null;
+    const state = stateName ? await State.findOne({ where: { name: stateName } }) : null;
+    const location = locationName ? await Location.findOne({ where: { name: locationName } }) : null;
+    const branch = branchName ? await Branch.findOne({ where: { name: branchName } }) : null;
+    const department = departmentName ? await Department.findOne({ where: { name: departmentName } }) : null;
+    const designation = designationName ? await Designation.findOne({ where: { name: designationName } }) : null;
+
+    if ((countryName && !country) ||
+        (stateName && !state) ||
+        (locationName && !location) ||
+        (branchName && !branch) ||
+        (departmentName && !department) ||
+        (designationName && !designation)) {
+      return res.status(400).json({ message: 'Invalid foreign key reference (country/state/etc.)' });
     }
 
-    if (roleName) {
-      const roleData = await Role.findOne({ where: { name: roleName } });
-      if (!roleData) {
-        return res.status(400).json({ message: 'Invalid role' });
-      }
-      user.roleId = roleData.id;
+    // let hashedPassword = user.password;
+    // if (password) {
+    //   hashedPassword = await bcryptHelper.hashPassword(password);
+    // }
+    await user.update({
+      firstname: firstName || user.firstname,
+      lastname: lastName || user.lastname,
+      //email: email || user.email,
+      //password: hashedPassword,
+      departmentId: department ? department.id : userInfo.departmentId,
+      //roleId: roleId,
+      //terms: terms !== undefined ? terms : user.terms,
+    });
+
+    if (userInfo) {
+      await userInfo.update({
+        phone: phone || userInfo.phone,
+        address: address || userInfo.address,
+        gender: gender || userInfo.gender,
+        blood_group: blood_group || userInfo.blood_group,
+        country_id: country ? country.id : userInfo.country_id,
+        state_id: state ? state.id : userInfo.state_id,
+        location_id: location ? location.id : userInfo.location_id,
+        branch_id: branch ? branch.id : userInfo.branch_id,
+        designationId: designation ? designation.id : userInfo.designationId,
+        updatedBy,
+      });
     }
-    user.firstname = firstname || user.firstname;
-    user.lastname = lastname || user.lastname;
-    user.email = email || user.email;
-    user.departmentId = departmentId || user.departmentId;
-
-    await user.save();
-
-    return res.status(200).json({ message: 'User updated successfully', userData: user });
+    return res.status(200).json({
+      message: 'User updated successfully.',
+      user: { user, userInfo },
+    });
   } catch (error) {
+    console.error('Error in updateUser:', error);
     return res.status(500).json({ message: 'Server error' });
   }
-}
+};
 const getUsers = async (req, res) => {
   try {
     const { page = 1, limit = 10, search, departmentName } = req.query;
@@ -400,53 +454,16 @@ async function deleteUser(req, res) {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    const tickets = await Ticket.findAll({ where: { createdBy: id } });
+    user.isActive = false;
+    await user.save();
 
-    for (const ticket of tickets) {
-      const ticketAttachments = await TicketAttachment.findAll({ where: { ticketId: ticket.id } });
-      for (const attachment of ticketAttachments) {
-        const url = new URL(attachment.url);
-        const key = decodeURIComponent(url.pathname.substring(1));
-        await deleteFileFromS3(key);
-      }
-      await TicketAttachment.destroy({ where: { ticketId: ticket.id } });
-      const comments = await Comment.findAll({ where: { ticketId: ticket.id } });
-      for (const comment of comments) {
-        const commentAttachments = await CommentAttachment.findAll({ where: { commentId: comment.id } });
-        for (const attachment of commentAttachments) {
-          const url = new URL(attachment.url);
-          const key = decodeURIComponent(url.pathname.substring(1));
-          await deleteFileFromS3(key);
-        }
-        await CommentAttachment.destroy({ where: { commentId: comment.id } });
-      }
-      await Comment.destroy({ where: { ticketId: ticket.id } });
-
-      await TicketHistory.destroy({ where: { ticketId: ticket.id } });
-
-      await deleteS3Folder(ticket.id);
-      
-      await ticket.destroy();
-    }
-
-    const userComments = await Comment.findAll({ where: { updatedBy: id } });
-    for (const comment of userComments) {
-      const commentAttachments = await CommentAttachment.findAll({ where: { commentId: comment.id } });
-      for (const attachment of commentAttachments) {
-        const url = new URL(attachment.url);
-        const key = decodeURIComponent(url.pathname.substring(1));
-        await deleteFileFromS3(key);
-      }
-      await CommentAttachment.destroy({ where: { commentId: comment.id } });
-    }
-    await Comment.destroy({ where: { updatedBy: id } });
-    await user.destroy();
-    return res.status(200).json({ message: 'User and all related data deleted successfully' });
+    return res.status(200).json({ message: 'User deactivated successfully' });
   } catch (error) {
     console.error('Delete user error:', error);
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 }
+
 const getActiveUsers = async (req, res) => {
   try {
     const {page = 1,limit = 10,search = '',departmentId} = req.query;

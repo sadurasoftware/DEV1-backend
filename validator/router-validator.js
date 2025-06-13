@@ -287,7 +287,7 @@ const deleteDepartmentSchema = Joi.object({
 });
 //user-management
 const createUservalidator = Joi.object({
-  firstname: Joi.string()
+  firstName: Joi.string()
     .pattern(/^[A-Za-z\s]+$/)
     .min(3)
     .max(50)
@@ -299,7 +299,7 @@ const createUservalidator = Joi.object({
       'string.max': `"First name" should have at most {#limit} characters`,
       'any.required': `"First name" is required`,
     }),
-  lastname: Joi.string()
+  lastName: Joi.string()
     .pattern(/^[A-Za-z\s]+$/)
     .min(1)
     .max(50)
@@ -344,10 +344,6 @@ const createUservalidator = Joi.object({
       'string.empty': `"Address" cannot be empty`,
       'any.required': `"Address" is required`,
     }),
-    // profilePicture: Joi.string().uri().allow('', null).messages({
-    //   'string.empty': `"Profile picture" cannot be empty`,
-    //   'any.required': `"Profile picture" is required`,
-    // }),
     gender : Joi.string().valid('Male', 'Female','Other').required().messages({
       'string.empty': `"Gender" cannot be empty`,
       'any.required': `"Gender" is required`,
@@ -372,64 +368,113 @@ const createUservalidator = Joi.object({
       'string.empty': `"Branch name" cannot be empty`,
       'any.required': `"Branch name" is required`,
     }),
+    departmentName: Joi.string().required().messages({
+      'string.empty': `"Department name" cannot be empty`,
+      'any.required': `"Department name" is required`,
+    }),
     designationName : Joi.string().required().messages({
       'string.empty': `"Designation name" cannot be empty`,
       'any.required': `"Designation name" is required`,
     }),
+    roleName: Joi.string().optional(),
   terms: Joi.boolean().valid(true).required().messages({
     'any.only': `"Terms" must be accepted`,
     'any.required': `"Terms" is required`,
   }),
 });
 
-const updateUservalidator = Joi.object({
-  firstname: Joi.string()
-  .pattern(/^[A-Za-z\s]+$/)
-  .min(3)
-  .max(50)
-  .required()
-  .messages({
-    'string.pattern.base': `"First name" can only contain letters and spaces`,
-    'string.empty': `"First name" cannot be empty`,
-    'string.min': `"First name" should have at least {#limit} characters`,
-    'string.max': `"First name" should have at most {#limit} characters`,
-    'any.required': `"First name" is required`,
-  }),
-  lastname: Joi.string()
-  .pattern(/^[A-Za-z\s]+$/)
-  .min(1)
-  .max(50)
-  .required()
-  .messages({
-    'string.pattern.base': `"Last name" can only contain letters and spaces`,
-    'string.empty': `"Last name" cannot be empty`,
-    'string.min': `"Last name" should have at least {#limit} characters`,
-    'string.max': `"Last name" should have at most {#limit} characters`,
-    'any.required': `"Last name" is required`,
-  }),
-  email: Joi.string().email().pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/,).required().messages({
-    'string.email': `"Email" must be a valid email address`,
-    'string.empty': `"Email" cannot be empty`,
-    'any.required': `"Email" is required`,
-  }),
-  password: Joi.string()
-  .pattern(passwordRegex)
-  .required()
-  .messages({
-    'string.pattern.base': `"Password" must contain at least 8 characters, including uppercase, lowercase, number, and special character`,
-    'string.empty': `"Password" cannot be empty`,
-    'any.required': `"Password" is required`,
-  }),
-  role: Joi.string().required().messages({
-    'string.empty': `"Role" cannot be empty`,
-    'any.required': `"Role" is required`,
-  }),
-  departmentId: Joi.number().integer().required().messages({
-    'number.base': 'departmentId must be a number.',
-    'any.required': 'departmentId is required.',
+
+const updateUserStatusSchemaParams= Joi.object({
+  id: Joi.number().integer().required().messages({
+    "number.base": "UserId must be a number.",
+    "number.integer": "UserId must be an integer.",
+    "any.required": "UserId is required.",
   }),
 });
- 
+
+const updateUserStatusSchema = Joi.object({
+    isActive: Joi.boolean().required().messages({
+      'any.required': '"isActive" is required',
+      'boolean.base': '"isActive" must be a boolean value',
+    }),
+  });
+  
+const updateUservalidator = Joi.object({
+  firstName: Joi.string()
+    .pattern(/^[A-Za-z\s]+$/)
+    .min(3)
+    .max(50)
+    .required()
+    .messages({
+      'string.pattern.base': `"First name" can only contain letters and spaces`,
+      'string.min': `"First name" should have at least {#limit} characters`,
+      'string.max': `"First name" should have at most {#limit} characters`,
+    }),
+  lastName: Joi.string()
+    .pattern(/^[A-Za-z\s]+$/)
+    .min(1)
+    .max(50)
+    .required()
+    .messages({
+      'string.pattern.base': `"Last name" can only contain letters and spaces`,
+      'string.min': `"Last name" should have at least {#limit} characters`,
+      'string.max': `"Last name" should have at most {#limit} characters`,
+    }),
+  // email: Joi.string()
+  //   .email()
+  //   .pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)
+  //   .required()
+  //   .messages({
+  //     'string.email': `"Email" must be a valid email address`,
+  //     'string.empty': `"Email" cannot be empty`,
+  //     'any.required': `"Email" is required`,
+  //   }),
+  // password: Joi.string()
+  //   .min(8)
+  //   .required()
+  //   .messages({
+  //     'string.min': `"Password" must contain at least {#limit} characters`,
+  //     'string.empty': `"Password" cannot be empty`,
+  //     'any.required': `"Password" is required`,
+  //   }),
+    phone: Joi.string()
+    .pattern(/^[0-9]+$/)
+    .min(10)
+    .max(10)
+    .required()
+    .messages({
+      'string.pattern.base': `"Phone number" can only contain numbers`,
+      'string.min': `"Phone number" should have at least {#limit} characters`,
+      'string.max': `"Phone number" should have at most {#limit} characters`,
+    }),
+    address : Joi.string().required().messages({
+      'string.empty': `"Address" cannot be empty`,
+    }),
+    gender : Joi.string().valid('Male', 'Female','Other').required().messages({
+      'string.empty': `"Gender" cannot be empty`,
+    }),
+    blood_group : Joi.string().valid('A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-').required().messages({
+      'string.empty': `"Blood group" cannot be empty`,
+    }),
+    countryName : Joi.string().required().messages({
+      'string.empty': `"Country name" cannot be empty`,
+    }),
+    stateName : Joi.string().required().messages({
+      'string.empty': `"State name" cannot be empty`,
+    }),
+    locationName : Joi.string().required().messages({
+      'string.empty': `"Location name" cannot be empty`,
+    }),
+    branchName : Joi.string().required().messages({
+      'string.empty': `"Branch name" cannot be empty`,
+    }),
+    departmentName: Joi.string().required().messages({
+      'string.empty': `"Department name" cannot be empty`,
+    }),
+    designationName : Joi.string().required().messages({
+      'string.empty': `"Designation name" cannot be empty`,
+    }),
+});
 
 const viewUserSchema=Joi.object({
   id: Joi.number().integer().required().messages({
@@ -1095,6 +1140,8 @@ module.exports = {
   deleteDepartmentSchemaValidator: validateParams(deleteDepartmentSchema),
 
   createUservalidator: validate(createUservalidator),
+  updateUserStatusSchemaParams:validateParams(updateUserStatusSchemaParams),
+  updateUserStatusSchema:validate(updateUserStatusSchema),
   updateUservalidator: validate(updateUservalidator),
   viewUservalidator: validateParams(viewUserSchema),
   deleteUservalidator: validateParams(deleteUserSchema),

@@ -47,21 +47,11 @@ const createBranch = async (req, res) => {
 };
 const getAllBranches = async (req, res) => {
   try {
-    const {page = 1,limit = 10,search = '',countryId,stateId,locationId,} = req.query;
+    const { search = '', page = 1, limit = 10 } = req.query;
+    const offset = (page - 1) * limit;
+    const searchLower = search.toLowerCase();
 
-    const offset = (parseInt(page) - 1) * parseInt(limit);
-    const whereClause = {};
-
-    if (locationId) whereClause.locationId = locationId;
-    if (stateId) whereClause.stateId = stateId;
-    if (countryId) whereClause.countryId = countryId;
-    if (search.trim()) {
-      whereClause.name = {
-        [Op.like]: `%${search.trim()}%`
-      };
-    }
-    const { count, rows: branches } = await Branch.findAndCountAll({
-      where: whereClause,
+    const branches = await Branch.findAndCountAll({
       include: [
         {
           model: Location,
@@ -83,22 +73,39 @@ const getAllBranches = async (req, res) => {
           ]
         }
       ],
+      where: {
+        [Op.or]: [
+          where(fn('LOWER', col('Branch.name')), {
+            [Op.like]: `%${searchLower}%`
+          }),
+          where(fn('LOWER', col('location.name')), {
+            [Op.like]: `%${searchLower}%`
+          }),
+          where(fn('LOWER', col('location.state.name')), {
+            [Op.like]: `%${searchLower}%`
+          }),
+          where(fn('LOWER', col('location.state.country.name')), {
+            [Op.like]: `%${searchLower}%`
+          }),
+        ]
+      },
       order: [['name', 'ASC']],
+      offset: parseInt(offset),
       limit: parseInt(limit),
-      offset,
     });
 
     return res.status(200).json({
-      total: count,
+      total: branches.count,
       page: parseInt(page),
-      totalPages: Math.ceil(count / limit),
-      branches
+      totalPages: Math.ceil(branches.count / limit),
+      branches: branches.rows
     });
   } catch (error) {
     console.error('Get branches error:', error);
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
 const getBranchById = async (req, res) => {
   try {
     const { id } = req.params;
